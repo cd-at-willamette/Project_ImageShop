@@ -29,6 +29,9 @@ def image_shop():
     def add_button(label, action):
         """
         Adds a button to the region on the left side of the window
+        label is the text that will be displayed on the button and
+        action is the callback function that will be run when the
+        button is clicked.
         """
         x = BUTTON_MARGIN
         y = gs.next_button_y
