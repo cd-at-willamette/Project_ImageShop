@@ -16,9 +16,9 @@ import urllib.request
 
 # Version information
 
-PGL_VERSION = 0.94
-PGL_BUGFIX = 2
-PGL_DATE = "9-Oct-20"
+PGL_VERSION = 0.95
+PGL_BUGFIX = 0
+PGL_DATE = "20-Jun-21"
 
 # Conditional imports
 
@@ -105,7 +105,7 @@ class GWindow(object):
         for w in tk.winfo_children():
             w.destroy()
         self._canvas = tkinter.Canvas(tk, width=width, height=height,
-                                      highlightthickness=0, background='white')
+                                      highlightthickness=0, bg='white')
         try:
             self._canvas.pack()
         except:
@@ -441,6 +441,7 @@ class GObject(object):
         self._parent = None
         self._tkid = None
         self._gw = None
+        self._ctm_base = _GTransform()
 
 # Public method: get_x
 
@@ -980,7 +981,17 @@ class GRect(GFillableObject):
         """
         Returns the bounds of this <code>GRect</code>.
         """
-        return GRectangle(self._x, self._y, self._width, self._height)
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        p0 = lctm.transform(0, 0)
+        bb = GRectangle(p0.get_x(), p0.get_y()) 
+        bb.add(lctm.transform(self._width, 0))
+        bb.add(lctm.transform(0, self._height))
+        bb.add(lctm.transform(self._width, self._height))        
+        return bb
 
 # Override method: get_type
 
@@ -1013,6 +1024,7 @@ class GRect(GFillableObject):
                                               self._width, self._height, lctm)
             self._tkid = tkc.create_polygon(*coords, width=self._line_width)
         self._update_color()
+        self._update_visible()
 
 # Override method: _update_rotation
 
@@ -1177,6 +1189,7 @@ class GOval(GFillableObject):
             self._tkid = tkc.create_polygon(*coords, width=self._line_width,
                                             smooth=1)
         self._update_color()
+        self._update_visible()
 
 # Override method: _update_rotation
 
@@ -1394,15 +1407,28 @@ class GCompound(GObject):
         """
         Redraws the window on rotation.
         """
-        self._update_location()
+        gw = self._get_window()
+        if gw is not None:
+            gw._rebuild()
+
+# Override method: _update_visible
+
+    def _update_visible(self):
+        """
+        Redraws the window on set_visible
+        """
+        gw = self._get_window()
+        if gw is not None:
+            gw._rebuild()
 
 # Override method: _install
 
     def _install(self, target, ctm):
-        lctm = ctm.compose(_GTransform(self._x, self._y,
-                                       rotation=self._angle, sf=self._sf))
-        for gobj in self._contents:
-            gobj._install(target, lctm)
+        if self._visible:
+            lctm = ctm.compose(_GTransform(self._x, self._y,
+                                           rotation=self._angle, sf=self._sf))
+            for gobj in self._contents:
+                gobj._install(target, lctm)
 
 # Internal method: _send_forward
 
@@ -1486,7 +1512,7 @@ class GCompound(GObject):
 class GArc(GFillableObject):
     """
     This graphical object subclass represents an elliptical arc.  The
-    arc is specified by the following parameters::
+    arc is specified by the following parameters:
 
     <ul>
        <li>The coordinates of the bounding rectangle (x, y, width, height)</li>
@@ -1715,17 +1741,22 @@ class GArc(GFillableObject):
                            sf=self._sf * ctm._sf)
         p0 = ctm.transform(self._x, self._y)
         if lctm._rotation == 0:
-            self._rep = "Arc"
-            style = tkinter.ARC
-            if self._fill_flag:
-                style = tkinter.PIESLICE
             p1 = ctm.transform(self._x + self._frame_width,
                                self._y + self._frame_height)
-            self._tkid = tkc.create_arc(p0._x, p0._y, p1._x, p1._y,
-                                        start=self._start,
-                                        extent=self._sweep,
-                                        width=self._line_width,
-                                        style=style)
+            if abs(self._sweep) >= 360:
+                self._rep = "Oval"
+                self._tkid = tkc.create_oval(p0._x, p0._y, p1._x, p1._y,
+                                             width=self._line_width)
+            else:
+                self._rep = "Arc"
+                style = tkinter.ARC
+                if self._fill_flag:
+                    style = tkinter.PIESLICE
+                self._tkid = tkc.create_arc(p0._x, p0._y, p1._x, p1._y,
+                                            start=self._start,
+                                            extent=self._sweep,
+                                            width=self._line_width,
+                                            style=style)
         else:
             self._rep = "Polygon"
             if self._fill_flag:
@@ -1747,6 +1778,7 @@ class GArc(GFillableObject):
                                              width=self._line_width,
                                              smooth=1)
         self._update_color()
+        self._update_visible()
 
 # Override method: set_filled
 
@@ -1788,7 +1820,10 @@ class GArc(GFillableObject):
                 fill = outline
             self._update_properties(outline=outline, fill=fill)
         else:
-            self._update_properties(fill=self._color)
+            if self._rep == "Oval":
+                self._update_properties(fill='')
+            else:
+                self._update_properties(fill=self._color)
 
 # Private method: _create_arc_coords
 
@@ -2008,6 +2043,7 @@ class GLine(GObject):
                                      p0._x + dp._x, p0._y + dp._y,
                                      width=self.get_line_width(),
                                      fill=self._color)
+        self._update_visible()
 
 # Override method: _update_points
 
@@ -2060,7 +2096,7 @@ class GImage(GObject):
         self._image_model = _image_model
         if _image_model == "PIL":
             if isinstance(source, str):
-                if "://" in source:
+                if "://" in source or source.startswith("data:"):
                     ctx = ssl.create_default_context()
                     ctx.check_hostname = False
                     ctx.verify_mode = ssl.CERT_NONE
@@ -2189,6 +2225,7 @@ class GImage(GObject):
         self._tkid = tkc.create_image(x, y,
                                       anchor=tkinter.NW,
                                       image=self._photo)
+        self._update_visible()
 
 # Override method: _update_rotation
 
@@ -2437,7 +2474,7 @@ class GLabel(GObject):
         dp = dtm.transform(0, self.get_height() - self.get_ascent())
         x = pt._x + dp._x
         y = pt._y + dp._y
-        baseline = y;
+        baseline = y
         if ctm.get_rotation() == 0:
             self._tkid = tkc.create_text(x,
                                          baseline,
@@ -2456,6 +2493,7 @@ class GLabel(GObject):
                                              anchor="sw")
             except:
                 raise Exception("GLabel rotation requires tkinter v6")
+        self._update_visible()
 
 # Override method: _update_rotation
 
@@ -2624,8 +2662,8 @@ class GPolygon(GFillableObject):
         oldx = coords[0]
         oldy = coords[1]
         coords = self._create_coords()
-        dx = oldx - coords[0]
-        dy = oldy - coords[1]
+        dx = coords[0] - oldx
+        dy = coords[1] - oldy
         tkc.move(self._tkid, dx, dy)
 
 # Override method: _update_rotation
@@ -2653,6 +2691,7 @@ class GPolygon(GFillableObject):
         coords = self._create_coords()
         self._tkid = tkc.create_polygon(*coords, width=self._line_width)
         self._update_color()
+        self._update_visible()
 
 # Override method: __str__
 
@@ -2838,9 +2877,31 @@ class GRectangle:
         """
         return self._width <= 0 or self._height <= 0
 
+# Public method: add
+
+    def add(self, x, y=None):
+        """
+        Adds a <code>GPoint</code> or <code>x</code>/<code>y</code> pair
+        to this <code>GRectangle</code>.
+        """
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x.x, x.y
+        if x < self._x:
+            self._width += self._x - x
+            self._x = x
+        elif x > self._x + self._width:
+            self._width = x - self._x
+        if y < self._y:
+            self._height += self._y - y
+            self._y = y
+        elif y > self._y + self._height:
+            self._height = y - self._y
+        
 # Public method: contains
 
-    def contains(self, x, y):
+    def contains(self, x, y=None):
         """
         Returns <code>True</code> if the specified point is inside the
         rectangle.
@@ -2906,6 +2967,14 @@ class GTimer:
         Determines whether the timer should repeat.
         """
         self._repeats = flag
+
+# Public method: set_delay
+
+    def set_delay(self, delay):
+        """
+        Sets the delay time for this timer.
+        """
+        self._delay = delay
 
 # Public method: start
 

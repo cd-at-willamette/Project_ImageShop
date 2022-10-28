@@ -6,7 +6,7 @@ implements the "Load" and "Flip Vertical" buttons.
 """
 
 from filechooser import choose_input_file
-from pgl import GWindow, GImage, GRect, GState
+from pgl import GWindow, GImage, GRect
 from button import GButton
 
 # Constants
@@ -34,19 +34,19 @@ def image_shop():
         button is clicked.
         """
         x = BUTTON_MARGIN
-        y = gs.next_button_y
+        y = gw.next_button_y
         button = GButton(label, action)
         button.set_size(BUTTON_WIDTH, BUTTON_HEIGHT)
         gw.add(button, x, y)
-        gs.next_button_y += BUTTON_HEIGHT + BUTTON_MARGIN
+        gw.next_button_y += BUTTON_HEIGHT + BUTTON_MARGIN
 
     def set_image(image):
         """
         Sets image as the current image after removing the old one.
         """
-        if gs.current_image is not None:
-            gw.remove(gs.current_image)
-        gs.current_image = image
+        if gw.current_image is not None:
+            gw.remove(gw.current_image)
+        gw.current_image = image
         x = BUTTON_AREA_WIDTH + (IMAGE_AREA_WIDTH - image.get_width()) / 2
         y = (gw.get_height() - image.get_height()) / 2
         gw.add(image, x, y)
@@ -59,17 +59,16 @@ def image_shop():
 
     def flip_vertical_action():
         """Callback function for the Flip Vertical button"""
-        if gs.current_image is not None:
-            set_image(flip_vertical(gs.current_image))
+        if gw.current_image is not None:
+            set_image(flip_vertical(gw.current_image))
         
     gw = GWindow(GWINDOW_WIDTH, GWINDOW_HEIGHT)
-    gs = GState()
     button_area = GRect(0, 0, BUTTON_AREA_WIDTH, GWINDOW_HEIGHT)    
     button_area.set_filled(True)
     button_area.set_color(BUTTON_BACKGROUND)
     gw.add(button_area)
-    gs.next_button_y = BUTTON_MARGIN
-    gs.current_image = None
+    gw.next_button_y = BUTTON_MARGIN
+    gw.current_image = None
     add_button("Load", load_button_action)
     add_button("Flip Vertical", flip_vertical_action)
 
