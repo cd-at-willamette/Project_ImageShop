@@ -39,10 +39,10 @@ class GButton(GCompound):
         frame.set_fill_color("White")
         self.add(frame)
         self.add(label)
-        self.text = text
-        self.label = label
-        self.frame = frame
-        self.fn = fn
+        self._text = text
+        self._label = label
+        self._frame = frame
+        self._fn = fn
         self._recenter()
 
 # Public method: set_size
@@ -51,7 +51,7 @@ class GButton(GCompound):
         """
         Sets the dimensions of the button.
         """
-        self.frame.set_size(width, height)
+        self._frame.set_size(width, height)
         self._recenter()
 
 # Public method: set_font
@@ -60,7 +60,7 @@ class GButton(GCompound):
         """
         Sets the font for the button.
         """
-        self.label.set_font(font)
+        self._label.set_font(font)
         self._recenter()
 
 # Public method: get_font
@@ -69,7 +69,7 @@ class GButton(GCompound):
         """
         Returns the font for the button.
         """
-        return self.label.get_font()
+        return self._label.get_font()
 
 # Public method: set_label
 
@@ -77,7 +77,7 @@ class GButton(GCompound):
         """
         Sets the label for the button.
         """
-        self.label.set_label(label)
+        self._label.set_label(label)
         self._recenter()
 
 # Public method: get_label
@@ -86,28 +86,38 @@ class GButton(GCompound):
         """
         Returns the label for the button.
         """
-        return self.label.get_label()
+        return self._label.get_label()
 
     def __str__(self):
-        return "<Button " + self.text + ">"
+        return "<Button " + self._text + ">"
 
 # Override method: _install
 
     def _install(self, target, ctm):
+
+        def click_action(e):
+            if hasattr(target, "_buttons"):
+                x = e.get_x()
+                y = e.get_y()
+                for button in target._buttons:
+                    bx = button.get_x()
+                    by = button.get_y()
+                    bw = button._frame.get_width()
+                    bh = button._frame.get_height()
+                    if x >= bx and x < bx + bw and y >= by and y < by + bh:
+                        button._fn()
+
         GCompound._install(self, target, ctm)
         if isinstance(target, GWindow):
-            target.add_event_listener("click", self._click_action)
-
-# Private method: _click_action
-
-    def _click_action(self, e):
-        if self.contains(e.get_x(), e.get_y()):
-            self.fn()
+            if not hasattr(target, "_buttons"):
+                target._buttons = set()
+                target.add_event_listener("click", click_action)
+            target._buttons.add(self)
 
 # Private method: _recenter
 
     def _recenter(self):
-        x = (self.frame.get_width() - self.label.get_width()) / 2
-        y = (self.frame.get_height() + self.label.get_ascent()) / 2
-        self.label.set_location(x, y + self.BUTTON_ASCENT_DELTA)
+        x = (self._frame.get_width() - self._label.get_width()) / 2
+        y = (self._frame.get_height() + self._label.get_ascent()) / 2
+        self._label.set_location(x, y + self.BUTTON_ASCENT_DELTA)
 
