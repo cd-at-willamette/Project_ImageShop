@@ -6,6 +6,7 @@ Tkinter, which is the most common graphics package for use with Python.
 """
 
 import atexit
+import importlib
 import inspect
 import io
 import math
@@ -16,23 +17,23 @@ import urllib.request
 
 # Version information
 
-PGL_VERSION = 0.96
-PGL_BUGFIX = 0
-PGL_DATE = "19-Mar-22"
+PGL_VERSION = 0.97
+PGL_BUGFIX = 1
+PGL_DATE = "14-Feb-23"
 
 # Conditional imports
 
 try:
-    import tkinter                          # pylint: disable=import-error
+    tkinter = importlib.import_module("tkinter")
     try:
-        import tkinter.font as tk_font      # pylint: disable=import-error
+        tk_font = importlib.import_module("tkinter.font")
     except Exception:
-        import tk_font                      # pylint: disable=import-error
+        tk_font = importlib.import_module("tk_font")
 except Exception as e:
     print('Could not load tkinter: ' + str(e))
 
 try:
-    from PIL import ImageTk, Image          # pylint: disable=import-error
+    from PIL import ImageTk, Image
     _image_model = "PIL"
 except Exception:
     _image_model = "PhotoImage"
@@ -40,11 +41,11 @@ except Exception:
 spyder_flag = False
 
 try:
-    import spydercustomize as customize     # pylint: disable=import-error
+    customize = importlib.import_module("spydercustomize")
     spyder_flag = True
 except Exception:
     try:
-        import sitecustomize as customize   # pylint: disable=import-error
+        customize = importlib.import_module("sitecustomize")
         spyder_flag = True
     except Exception:
         pass
@@ -67,10 +68,7 @@ if spyder_flag:
 # Class GWindow
 
 class GWindow(object):
-    """
-    This class represents a graphics window that can contain graphical
-    objects.
-    """
+    """This class represents a window that can contain graphical objects."""
 
 # Public constants
 
@@ -81,17 +79,11 @@ class GWindow(object):
 # Constructor: GWindow
 
     def __init__(self, width=DEFAULT_WIDTH, height=DEFAULT_HEIGHT):
-        """
-        The constructor takes either of the following forms:
-
-        <pre>
-           GWindow()
-           GWindow(width, height)
-        </pre>
-
-        If the dimensions are missing, the constructor creates a
-        <code>GWindow</code> with a default size.
-        """
+        """Creates a new GWindow with the specified size."""
+        if not _is_number(width):
+            raise TypeError("GWindow: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GWindow: height must be a number")
         try:
             tk = tkinter._root
             tk.deiconify()
@@ -137,17 +129,13 @@ class GWindow(object):
 # Public method: close
 
     def close(self):
-        """
-        Deletes the window from the screen.
-        """
+        """Deletes the window from the screen."""
         self._delete_window()
 
 # Public method: event_loop
 
     def event_loop(self):
-        """
-        Waits for events to happen in the window.
-        """
+        """Waits for events to happen in the window."""
         self._event_loop_started = True
         try:
             tkinter._root.mainloop()
@@ -157,116 +145,94 @@ class GWindow(object):
 # Public method: request_focus
 
     def request_focus(self):
-        """
-        Asks the system to assign the keyboard focus to the window, which
-        brings it to the top and ensures that key events are delivered to
-        the window.
-        """
+        """Asks the system to assign the keyboard focus to the window."""
         tkinter._root.canvas.focus_set()
 
 # Public method: clear
 
     def clear(self):
-        """
-        Clears the contents of the window.
-        """
+        """Clears the contents of the window."""
         self._base.remove_all()
 
 # Public method: get_width
 
     def get_width(self):
-        """
-        Returns the width of the graphics window in pixels.
-        """
+        """Returns the width of the graphics window in pixels."""
         return self._window_width
 
 # Public method: get_height
 
     def get_height(self):
-        """
-        Returns the height of the graphics window in pixels.
-        """
+        """Returns the height of the graphics window in pixels."""
         return self._window_height
 
 # Public method: add_event_listener
 
     def add_event_listener(self, type, fn):
-        """
-        Adds an event listener of the specified type to the window.
-        """
+        """Adds an event listener of the specified type to the window."""
+        if not isinstance(type, str):
+            raise TypeError("add_event_listener: type must be a string")
+        if not callable(fn):
+            raise TypeError("add_event_listener: fn must be callable")
         self._event_manager.add_event_listener(type, fn)
 
 # Public method: repaint
 
     def repaint(self):
-        """
-        Schedule a repaint on this window.
-        """
+        """Schedule a repaint on this window."""
         pass
 
 # Public method: set_window_title
 
     def set_window_title(self, title):
-        """
-        Sets the title of the graphics window.
-        """
+        """Sets the title of the graphics window."""
+        if not isinstance(title, str):
+            raise TypeError("set_window_title: title must be a string")
         self._window_title = title
         self._tk.title(title)
 
 # Public method: get_window_title
 
     def get_window_title(self):
-        """
-        Returns the title of the graphics window.
-        """
+        """Returns the title of the graphics window."""
         return self._window_title
 
 # Public method: add
 
     def add(self, gobj, x=None, y=None):
-        """
-        Adds the <code>GObject</code> to the window.  The first parameter
-        is the object to be added.  The <code>x</code> and <code>y</code>
-        parameters are optional.  If they are supplied, the location of
-        the object is set to (<code>x</code>, <code>y</code>).
-        """
+        """Adds gobj to the window after moving it to (x, y), if specified."""
         self._base.add(gobj, x, y)
 
 # Public method: remove
 
     def remove(self, gobj):
-        """
-        Removes the object from the window.
-        """
+        """Removes the object from the window."""
         self._base.remove(gobj)
 
 # Public method: get_element_at
 
     def get_element_at(self, x, y):
-        """
-        Returns the topmost <code>GObject</code> containing the
-        point (x, y), or <code>None</code> if no such object exists.
-        """
+        """Returns the topmost GObject containing (x, y), or None."""
         return self._base.get_element_at(x, y)
 
 # Public method: create_timer
 
     def create_timer(self, fn, delay):
-        """
-        Creates a new timer object that calls fn after the specified
-        delay, which is measured in milliseconds.  The timer must be
-        started by calling the <code>start</code> method.
-        """
+        """Creates a GTimer object that calls fn after delay milliseconds."""
+        if not callable(fn):
+            raise TypeError("create_timer: fn must be callable")
+        if not _is_number(delay):
+            raise TypeError("create_timer: delay must be a number")
         return GTimer(self, fn, delay)
 
 # Public method: set_timeout
 
     def set_timeout(self, fn, delay):
-        """
-        Creates and starts a one-shot timer that calls fn after the
-        specified delay, which is measured in milliseconds.  The
-        set_timeout method returns the <code>GTimer</code> object.
-        """
+        """Starts a one-shot timer that calls fn after delay milliseconds."""
+        if not callable(fn):
+            raise TypeError("set_timeout: fn must be callable")
+        if not _is_number(delay):
+            raise TypeError("set_timeout: delay must be a number")
         timer = GTimer(self, fn, delay)
         timer.start()
         return timer
@@ -274,11 +240,11 @@ class GWindow(object):
 # Public method: set_interval
 
     def set_interval(self, fn, delay):
-        """
-        Creates and starts an interval timer that calls fn after the
-        specified delay, which is measured in milliseconds.  The
-        set_interval method returns the <code>GTimer</code> object.
-        """
+        """Starts an interval timer that calls fn every delay milliseconds."""
+        if not callable(fn):
+            raise TypeError("set_interval: fn must be callable")
+        if not _is_number(delay):
+            raise TypeError("set_interval: delay must be a number")
         timer = GTimer(self, fn, delay)
         timer.set_repeats(True)
         timer.start()
@@ -287,11 +253,9 @@ class GWindow(object):
 # Public method: pause
 
     def pause(self, delay):
-        """
-        Pauses the current thread for the specified delay, which is
-        measured in milliseconds.  The pause method periodically checks
-        the event queue to update the contents of the window.
-        """
+        """Pauses the current thread for delay milliseconds."""
+        if not _is_number(delay):
+            raise TypeError("pause: delay must be a number")
         n_cycles = delay // GWindow.MIN_WAKEUP
         for i in range(n_cycles):           # pylint: disable=unused-variable
             self._tk.update_idletasks()
@@ -302,65 +266,51 @@ class GWindow(object):
 
     @staticmethod
     def exit():
-        """
-        Closes all graphics windows and exits from the application without
-        waiting for any additional user interaction.
-        """
+        """Closes all windows and exits from the application."""
         sys.exit()
 
 # Public static method: get_program_name
 
     @staticmethod
     def get_program_name():
-        """
-        Returns the name of this program.
-        """
+        """Returns the name of this program."""
         return _get_program_name()
 
 # Public static method: get_screen_width
 
     @staticmethod
     def get_screen_width():
-        """
-        Returns the width of the entire display screen.
-        """
+        """Returns the width in pixels of the entire display screen."""
         return _get_screen_width()
 
 # Public static method: get_screen_height
 
     def get_screen_height():
-        """
-        Returns the height of the entire display screen.
-        """
+        """Returns the height in pixels of the entire display screen."""
         return _get_screen_height()
 
 # Public static method: convert_color_to_rgb
 
-    def convert_color_to_rgb(color_name):
-        """
-        Converts a color name into an integer that encodes the
-        red, green, and blue components of the color.
-        """
-        return _convert_color_to_rgb(color_name)
+    @staticmethod
+    def convert_color_to_rgb(name):
+        """Converts a color name into an int that encodes the rgb values."""
+        if not isinstance(name, str):
+            raise TypeError("convert_color_to_rgb: name must be a string")
+        return _convert_color_to_rgb(name)
 
 # Public static method: convert_rgb_to_color
 
     @staticmethod
     def convert_rgb_to_color(rgb):
-        """
-        Converts an rgb value into a name in the form <code>"#rrggbb"</code>.
-        Each of the <code>rr</code>, <code>gg</code>, and <code>bb</code>
-        values are two-digit hexadecimal numbers indicating the intensity
-        of that component.
-        """
+        """Converts an rgb value into a string in the form "#rrggbb"."""
+        if not isinstance(rgb, int):
+            raise TypeError("convert_rgb_to_color: rgb must be an integer")
         return _convert_rgb_to_color(rgb)
 
 # Private method: _delete_window
 
     def _delete_window(self):
-        """
-        Closes the window and exits from the event loop.
-        """
+        """Closes the window and exits from the event loop."""
         try:
             self._active = False
             try:
@@ -376,47 +326,16 @@ class GWindow(object):
 # Private method: _start_event_loop
 
     def _start_event_loop(self):
-        """
-        Starts the event loop if it wasn't run explicitly.
-        """
+        """Starts the event loop if it wasn't run explicitly."""
         if not self._event_loop_started:
             self.event_loop()
 
 # Private method: _rebuild
 
     def _rebuild(self):
-        """
-        Rebuilds the tkinter data structure for the window.  This
-        operation is triggered if a global update is necessary.
-        """
+        """Rebuilds the tkinter data structure for the window."""
         self._canvas.delete("all")
         self._base._install(self, _GTransform())
-
-# Define camel-case names
-
-    eventLoop = event_loop
-    requestFocus = request_focus
-    getWidth = get_width
-    getHeight = get_height
-    addEventListener = add_event_listener
-    setWindowTitle = set_window_title
-    getWindowTitle = get_window_title
-    getElementAt = get_element_at
-    createTimer = create_timer
-    setTimeout = set_timeout
-    setInterval = set_interval
-    getProgramName = get_program_name
-    getScreenWidth = get_screen_width
-    getScreenHeight = get_screen_height
-    convertColorToRGB = convert_color_to_rgb
-    convertRGBToColor = convert_rgb_to_color
-
-# Allow British spelling
-
-    convert_colour_to_rgb = convert_color_to_rgb
-    convert_rgb_to_colour = convert_rgb_to_color
-    convertColourToRGB = convert_color_to_rgb
-    convertRGBToColour = convert_rgb_to_color
 
 # Class: GObject
 
@@ -424,17 +343,13 @@ class GObject(object):
     """
     This class is the common superclass of all graphical objects that can
     be displayed on a graphical window. For examples illustrating the use
-    of the <code>GObject</code> class, see the descriptions of the
-    individual subclasses.
+    of the GObject class, see the descriptions of the individual subclasses.
     """
 
 # Constructor: GObject
 
     def __init__(self):
-        """
-        Creates a new <code>GObject</code>.  The constructor is called
-        only by subclasses.
-        """
+        """Creates a new GObject (called only by subclasses)."""
         self._x = 0.0
         self._y = 0.0
         self._sf = 1
@@ -450,37 +365,35 @@ class GObject(object):
 # Public method: get_x
 
     def get_x(self):
-        """
-        Returns the x-coordinate of the object.
-        """
+        """Returns the x-coordinate of the object."""
         return self._x
 
 # Public method: get_y
 
     def get_y(self):
-        """
-        Returns the y-coordinate of the object.
-        """
+        """Returns the y-coordinate of the object."""
         return self._y
 
 # Public method: get_location
 
     def get_location(self):
-        """
-        Returns the location of this object as a <code>GPoint</code>.
-        """
+        """Returns the location of this object as a GPoint."""
         return GPoint(self._x, self._y)
 
 # Public method: set_location
 
     def set_location(self, x, y):
-        """
-        Sets the location of this object to the specified point.
-        """
+        """Sets the location of this object to the specified point."""
         if isinstance(x, GPoint):
             x, y = x.get_x(), x.get_y()
         elif isinstance(x, dict):
-            x, y = x.x, x.y
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("set_location: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_location: y must be a number")
         self._x = x
         self._y = y
         self._update_location()
@@ -488,19 +401,21 @@ class GObject(object):
 # Public method: move
 
     def move(self, dx, dy):
-        """
-        Moves the object on the screen using the displacements
-        <code>dx</code> and <code>dy</code>.
-        """
+        """Moves the object using the displacements dx and dy."""
+        if not _is_number(dx):
+            raise TypeError("move: dx must be a number")
+        if not _is_number(dy):
+            raise TypeError("move: dy must be a number")
         self.set_location(self._x + dx, self._y + dy)
 
 # Public method: move_polar
 
     def move_polar(self, r, theta):
-        """
-        Moves the object on the screen the distance <i>r</i> in the
-        direction <i>theta</i>.
-        """
+        """Moves the object the distance r in the direction theta."""
+        if not _is_number(r):
+            raise TypeError("move_polar: r must be a number")
+        if not _is_number(theta):
+            raise TypeError("move_polar: theta must be a number")
         dx = r * math.cos(math.radians(theta))
         dy = -r * math.sin(math.radians(theta))
         self.move(dx, dy)
@@ -508,57 +423,43 @@ class GObject(object):
 # Public method: get_width
 
     def get_width(self):
-        """
-        Returns the width of this object, which is defined to be the width of
-        the bounding box.
-        """
+        """Returns the width of the bounding box of this object."""
         return self.get_bounds().get_width()
 
 # Public method: get_height
 
     def get_height(self):
-        """
-        Returns the height of this object, which is defined to be the height
-        of the bounding box.
-        """
+        """Returns the height of the bounding box of this object."""
         return self.get_bounds().get_height()
 
 # Public method: get_size
 
     def get_size(self):
-        """
-        Returns the size of the object as a <code>GDimension</code>.
-        """
+        """Returns the size of the object as a GDimension."""
         bounds = self.get_bounds()
         return GDimension(bounds.get_width(), bounds.get_height())
 
 # Public method: set_line_width
 
     def set_line_width(self, line_width):
-        """
-        Sets the width of the line used to draw this object.
-        """
+        """Sets the width of the line used to draw this object."""
+        if not _is_number(line_width):
+            raise TypeError("set_line_width: line_width must be a number")
         self._line_width = line_width
         self._update_properties(width=line_width)
 
 # Public method: get_line_width
 
     def get_line_width(self):
-        """
-        Returns the width of the line used to draw this object.
-        """
+        """Returns the width of the line used to draw this object."""
         return self._line_width
 
 # Public method: set_color
 
     def set_color(self, color):
-        """
-        Sets the color used to display this object.  The color parameter is
-        usually one of the CSS color names.  The color can also be specified
-        as a string in the form <code>"#rrggbb"</code> where <code>rr</code>,
-        <code>gg</code>, and <code>bb</code> are pairs of hexadecimal digits
-        indicating the red, green, and blue components of the color.
-        """
+        """Sets the color used to display this object."""
+        if not isinstance(color, str):
+            raise TypeError("set_color: color must be a string")
         rgb = _convert_color_to_rgb(color)
         self._color = _convert_rgb_to_color(rgb)
         self._update_color()
@@ -566,56 +467,41 @@ class GObject(object):
 # Public method: get_color
 
     def get_color(self):
-        """
-        Returns the current color as a string in the form
-        <code>"#rrggbb"</code>.  In this string, the values <code>rr</code>,
-        <code>gg</code>, and <code>bb</code> are two-digit hexadecimal
-        values representing the red, green, and blue components.
-        """
+        """Returns the object color as a string in the form "#rrggbb"."""
         return self._color
 
 # Public method: scale
 
     def scale(self, sf):
-        """
-        Scales the object by the specified scale factor.
-        """
+        """Scales the object by the specified scale factor."""
         raise Exception("Not yet implemented")
 
 # Public method: rotate
 
     def rotate(self, theta):
-        """
-        Transforms the object by rotating it theta degrees counterclockwise
-        around its origin.
-        """
+        """Rotates the object theta degrees counterclockwise."""
+        if not _is_number(theta):
+            raise TypeError("rotate: theta must be a number")
         self._angle += theta
         self._update_rotation()
 
 # Public method: set_visible
 
     def set_visible(self, flag):
-        """
-        Sets whether this object is visible.
-        """
+        """Sets whether this object is visible."""
         self._visible = flag
         self._update_visible()
 
 # Public method: is_visible
 
     def is_visible(self):
-        """
-        Returns true if this object is visible.
-        """
+        """Returns true if this object is visible."""
         return self._visible
 
 # Public method: send_forward
 
     def send_forward(self):
-        """
-        Moves this object one step toward the front in the z dimension.
-        If it was already at the front of the stack, nothing happens.
-        """
+        """Moves this object one step toward the front in the z dimension."""
         parent = self.get_parent()
         if parent is not None:
             parent._send_forward(self)
@@ -623,12 +509,7 @@ class GObject(object):
 # Public method: send_to_front
 
     def send_to_front(self):
-        """
-        Moves this object to the front of the display in the z dimension.
-        By moving it to the front, this object will appear to be on top of the
-        other graphical objects on the display and may hide any objects that
-        are further back.
-        """
+        """Moves this object to the front in the z dimension."""
         parent = self.get_parent()
         if parent is not None:
             parent._send_to_front(self)
@@ -636,10 +517,7 @@ class GObject(object):
 # Public method: send_backward
 
     def send_backward(self):
-        """
-        Moves this object one step toward the back in the z dimension.
-        If it was already at the back of the stack, nothing happens.
-        """
+        """Moves this object one step toward the back in the z dimension."""
         parent = self.get_parent()
         if parent is not None:
             parent._send_backward(self)
@@ -647,12 +525,7 @@ class GObject(object):
 # Public method: send_to_back
 
     def send_to_back(self):
-        """
-        Moves this object to the back of the display in the z dimension.
-        By moving it to the back, this object will appear to be behind
-        the other graphical objects on the display and may be obscured
-        by other objects in front.
-        """
+        """Moves this object to the back in the z dimension."""
         parent = self.get_parent()
         if parent is not None:
             parent._send_to_back(self)
@@ -660,13 +533,24 @@ class GObject(object):
 # Public method: contains
 
     def contains(self, x, y):
-        """
-        Returns true if the specified point is inside the object.
-        """
+        """Returns true if the specified point is inside the object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
         if isinstance(x, GPoint):
             x, y = x.get_x(), x.get_y()
         elif isinstance(x, dict):
-            x, y = x.x, x.y
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
         bounds = self.get_bounds()
         if bounds is None:
             return False
@@ -674,49 +558,34 @@ class GObject(object):
 
 # Public method: get_parent
 
+# Implementation notes: get_parent
+# --------------------------------
+# Every GWindow is initialized to contain a single GCompound that
+# is aligned with the window.  Adding objects to the window adds
+# them to that GCompound, which means that every object you add
+# to the window has a parent.  Calling get_parent on the top-level
+# GCompound returns None.
+
     def get_parent(self):
-        """
-        Returns a pointer to the <code>GCompound</code> that contains this
-        object.  Every <code>GWindow</code> is initialized to contain a
-        single <code>GCompound</code> that is aligned with the window.
-        Adding objects to the window adds them to that <code>GCompound</code>,
-        which means that every object you add to the window has a parent.
-        Calling <code>get_parent</code> on the top-level <code>GCompound</code>
-        returns <code>None</code>.
-        """
+        """Returns a pointer to the GCompound that contains this object."""
         return self._parent
 
 # Abstract method: get_type
 
     def get_type(self):
-        """
-        Returns the concrete type of the object as a string, as in
-        "GOval" or "GRect".
-        """
+        """Returns the concrete type of the object as a string."""
         raise Exception("get_type is not defined in the GObject class")
 
 # Abstract method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounding box of this object, which is defined to be the
-        smallest rectangle that covers everything drawn by the figure.  The
-        coordinates of this rectangle do not necessarily match the location
-        returned by <code>get_location</code>.  Given a <code>GLabel</code>
-        object, for example, <code>get_location</code> returns the
-        coordinates of the point on the baseline at which the string begins.
-        The <code>get_bounds</code> method, by contrast, returns a rectangle
-        that covers the entire window area occupied by the string.
-        """
+        """Returns the bounding box of this object."""
         raise Exception("get_bounds is not defined in the GObject class")
 
 # Protected method: _update_properties
 
     def _update_properties(self, **options):
-        """
-        Updates the specified properties of the object, if it is installed
-        in a window.
-        """
+        """Updates the specified properties of the object."""
         gw = self._get_window()
         if gw is None:
             return
@@ -726,15 +595,15 @@ class GObject(object):
 # Protected method: _update_location
 
     def _update_location(self):
-        """
-        Updates the location for this object from the stored x and y
-        values.  Some subclasses need to override this method.
-        """
+        """Updates this object's location from the stored x and y values."""
         gw = self._get_window()
         if gw is None:
             return
         tkc = gw._canvas
-        coords = tkc.coords(self._tkid)
+        try:
+            coords = tkc.coords(self._tkid)
+        except Exception:
+            return
         offx = 0
         offy = 0
         gobj = self.get_parent()
@@ -749,18 +618,13 @@ class GObject(object):
 # Protected method: _update_color
 
     def _update_color(self):
-        """
-        Updates the color properties.  Some subclasses need to override
-        this method.
-        """
+        """Updates the color properties of this object."""
         self._update_properties(fill=self._color)
 
 # Protected method: _update_visible
 
     def _update_visible(self):
-        """
-        Updates the visible property.
-        """
+        """Updates the visible property."""
         if self._visible:
             self._update_properties(state=tkinter.NORMAL)
         else:
@@ -769,20 +633,13 @@ class GObject(object):
 # Protected method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates the rotation angle for this object.  Subclasses that
-        support rotation need to override this method.
-        """
+        """Updates the rotation angle for this object."""
         raise Exception("Rotation not yet implemented for this class")
 
 # Private method: _get_window
 
     def _get_window(self):
-        """
-        Returns the <code>GWindow</code> in which this <code>GObject</code>
-        is installed.  If the object is not installed in a window, this
-        method returns <code>None</code>.
-        """
+        """Returns the GWindow in which this object is installed."""
         gobj = self
         while gobj._parent is not None:
             gobj = gobj._parent
@@ -791,55 +648,19 @@ class GObject(object):
 # Private abstract method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the object in the target, creating any tkinter objects
-        that are necessary.
-        """
+        """Installs the object in the target."""
         raise Exception("_install is not defined in the GObject class")
 
-# Define camel-case names
-
-    getX = get_x
-    getY = get_y
-    getLocation = get_location
-    setLocation = set_location
-    movePolar = move_polar
-    getWidth = get_width
-    getHeight = get_height
-    getSize = get_size
-    setLineWidth = set_line_width
-    getLineWidth = get_line_width
-    setColor = set_color
-    getColor = get_color
-    setVisible = set_visible
-    isVisible = is_visible
-    sendForward = send_forward
-    sendToFront = send_to_front
-    sendBackward = send_backward
-    sendToBack = send_to_back
-    getParent = get_parent
-
-# Allow British spelling
-
-    set_colour = set_color
-    get_colour = get_color
-    setColour = set_color
-    getColour = get_color
 
 # Class: GFillableObject
 
 class GFillableObject(GObject):
-    """
-    This abstract class is the superclass of all objects that are fillable.
-    """
+    """This abstract class is the superclass of all fillable objects."""
 
 # Constructor: GFillableObject
 
     def __init__(self):
-        """
-        Initializes a <code>GFillableObject</code>.  Because this is an
-        abstract class, clients should not call this constructor explicitly.
-        """
+        """Initializes a GFillableObject (called only by subclasses)."""
         GObject.__init__(self)
         self._fill_flag = False
         self._fill_color = ""
@@ -847,27 +668,22 @@ class GFillableObject(GObject):
 # Public method: set_filled
 
     def set_filled(self, flag):
-        """
-        Sets the fill status for the object, where <code>False</code>
-        is outlined and <code>True</code> is filled.
-        """
+        """Sets the fill flag for the object (False=outlined, True=filled)."""
         self._fill_flag = flag
         self._update_color()
 
 # Public method: is_filled
 
     def is_filled(self):
-        """
-        Returns <code>True</code> if the object is filled.
-        """
+        """Returns True if the object is filled."""
         return self._fill_flag
 
 # Public method: set_fill_color
 
     def set_fill_color(self, color):
-        """
-        Sets the color used to display the filled region of the object.
-        """
+        """Sets the color used to display the filled region of the object."""
+        if not isinstance(color, str):
+            raise TypeError("set_fill_color: color must be a string")
         rgb = _convert_color_to_rgb(color)
         self._fill_color = _convert_rgb_to_color(rgb)
         self._update_color()
@@ -875,19 +691,13 @@ class GFillableObject(GObject):
 # Public method: get_fill_color
 
     def get_fill_color(self):
-        """
-        Returns the color used to display the filled region of this
-        object.  If no fill color has been set, <code>get_fill_color</code>
-        returns the empty string.
-        """
+        """Returns the color used to fill this object."""
         return self._fill_color
 
 # Override method: _update_color
 
     def _update_color(self):
-        """
-        Updates the color properties for a <code>GFillableObject</code>.
-        """
+        """Updates the color properties for a GFillableObject."""
         outline = self._color
         if self._fill_flag:
             fill = self._fill_color
@@ -897,43 +707,16 @@ class GFillableObject(GObject):
             fill = ""
         self._update_properties(outline=outline, fill=fill)
 
-# Define camel-case names
-
-    setFilled = set_filled
-    isFilled = is_filled
-    setFillColor = set_fill_color
-    getFillColor = get_fill_color
-
-# Allow British spelling
-
-    set_fill_colour = set_fill_color
-    get_fill_colour = get_fill_color
-    setFillColour = set_fill_color
-    getFillColour = get_fill_color
 
 # Class: GRect
 
 class GRect(GFillableObject):
-    """
-    This class represents a graphical object whose appearance consists of
-    a rectangular box.
-    """
+    """This class implements a rectangular GObject."""
 
 # Constructor: GRect
 
     def __init__(self, a1, a2, a3=None, a4=None):
-        """
-        The <code>GRect</code> constructor takes either of the following
-        forms:
-
-        <pre>
-           GRect(width, height)
-           GRect(x, y, width, height)
-        </pre>
-
-        If the <code>x</code> and <code>y</code> parameters are missing,
-        the origin is set to (0, 0).
-        """
+        """Creates a GRect from (x,y,width,height) or (width,height)."""
         GFillableObject.__init__(self)
         if a3 is None:
             x = 0
@@ -945,6 +728,14 @@ class GRect(GFillableObject):
             y = a2
             width = a3
             height = a4
+        if not _is_number(x):
+            raise TypeError("GRect: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GRect: y must be a number")
+        if not _is_number(width):
+            raise TypeError("GRect: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GRect: height must be a number")
         self._width = width
         self._height = height
         self.set_location(x, y)
@@ -952,11 +743,13 @@ class GRect(GFillableObject):
 # Public method: set_size
 
     def set_size(self, width, height=None):
-        """
-        Changes the size of this rectangle as specified.
-        """
+        """Changes the size of this rectangle as specified."""
         if isinstance(width, GDimension):
             width, height = width.get_width(), width.get_height()
+        if not _is_number(width):
+            raise TypeError("set_size: width must be a number")
+        if not _is_number(height):
+            raise TypeError("set_size: height must be a number")
         self._width = width
         self._height = height
         gw = self._get_window()
@@ -970,21 +763,25 @@ class GRect(GFillableObject):
 # Public method: set_bounds
 
     def set_bounds(self, x, y=None, width=None, height=None):
-        """
-        Changes the bounds of this rectangle to the specified values.
-        """
+        """Changes the bounds of this rectangle to the specified values."""
         if isinstance(x, GRectangle):
             width, height = x.get_width(), x.get_height()
             x, y = x.get_x(), x.get_y()
+        if not _is_number(x):
+            raise TypeError("set_bounds: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_bounds: y must be a number")
+        if not _is_number(width):
+            raise TypeError("set_bounds: width must be a number")
+        if not _is_number(height):
+            raise TypeError("set_bounds: height must be a number")
         self.set_location(x, y)
         self.set_size(width, height)
 
 # Override method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounds of this <code>GRect</code>.
-        """
+        """Returns the bounds of this GRect."""
         ctm = self._ctm_base
         lctm = _GTransform(tx=self._x + ctm._tx,
                            ty=self._y + ctm._ty,
@@ -1000,17 +797,13 @@ class GRect(GFillableObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object.
-        """
+        """Returns the type of this object."""
         return "GRect"
 
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GRect</code> in the canvas.
-        """
+        """Installs the GRect in the canvas."""
         gw = target
         tkc = gw._canvas
         self._ctm_base = ctm
@@ -1033,9 +826,7 @@ class GRect(GFillableObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates the points for this <code>GRect</code> after a rotation.
-        """
+        """Updates the points for this GRect after a rotation."""
         gw = self._get_window()
         if gw is not None:
             if self._rep == "Rectangle":
@@ -1068,36 +859,16 @@ class GRect(GFillableObject):
         return ("GRect(" + str(self._x) + ", " + str(self._y) + ", " +
                 str(self._width) + ", " + str(self._height) + ")")
 
-# Define camel-case names
-
-    setSize = set_size
-    setBounds = set_bounds
-    getBounds = get_bounds
-    getType = get_type
 
 # Class: GOval
 
 class GOval(GFillableObject):
-    """
-    This graphical object subclass represents an oval inscribed in
-    a rectangular box.
-    """
+    """This class represents an oval inscribed in a rectangular box."""
 
 # Constructor: GOval
 
     def __init__(self, a1, a2, a3=None, a4=None):
-        """
-        The <code>GOval</code> constructor takes either of the following
-        forms:
-
-        <pre>
-           GOval(width, height)
-           GOval(x, y, width, height)
-        </pre>
-
-        If the <code>x</code> and <code>y</code> parameters are missing,
-        the origin is set to (0, 0).
-        """
+        """Creates a GOval from (x,y,width,height) or (width,height)."""
         GFillableObject.__init__(self)
         if a3 is None:
             x = 0
@@ -1109,6 +880,14 @@ class GOval(GFillableObject):
             y = a2
             width = a3
             height = a4
+        if not _is_number(x):
+            raise TypeError("GOval: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GOval: y must be a number")
+        if not _is_number(width):
+            raise TypeError("GOval: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GOval: height must be a number")
         self._width = width
         self._height = height
         self._rep = "Oval"
@@ -1117,11 +896,13 @@ class GOval(GFillableObject):
 # Public method: set_size
 
     def set_size(self, width, height=None):
-        """
-        Changes the size of this oval as specified.
-        """
+        """Changes the size of this oval as specified."""
         if isinstance(width, GDimension):
             width, height = width.get_width(), width.get_height()
+        if not _is_number(width):
+            raise TypeError("set_size: width must be a number")
+        if not _is_number(height):
+            raise TypeError("set_size: height must be a number")
         self._width = width
         self._height = height
         gw = self._get_window()
@@ -1135,26 +916,61 @@ class GOval(GFillableObject):
 # Public method: set_bounds
 
     def set_bounds(self, x, y=None, width=None, height=None):
-        """
-        Changes the bounds of this rectangle to the specified values.
-        """
+        """Changes the bounds of this rectangle to the specified values."""
         if isinstance(x, GRectangle):
             width, height = x.get_width(), x.get_height()
             x, y = x.get_x(), x.get_y()
+        if not _is_number(x):
+            raise TypeError("set_bounds: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_bounds: y must be a number")
+        if not _is_number(width):
+            raise TypeError("set_bounds: width must be a number")
+        if not _is_number(height):
+            raise TypeError("set_bounds: height must be a number")
         self.set_location(x, y)
         self.set_size(width, height)
 
 # Override method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounds of this <code>GOval</code>.
-        """
-        return GRectangle(self._x, self._y, self._width, self._height)
+        """Returns the bounds of this GOval."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        rx = self._width / 2
+        ry = self._height / 2
+        center = lctm.transform(rx, ry)
+        ux = rx * math.cos(math.radians(lctm._rotation))
+        uy = rx * math.sin(math.radians(lctm._rotation))
+        vx = ry * math.cos(math.radians(lctm._rotation) + math.pi / 2)
+        vy = ry * math.sin(math.radians(lctm._rotation) + math.pi / 2)
+        hw = math.sqrt(ux * ux + vx * vx)
+        hh = math.sqrt(uy * uy + vy * vy)
+        return GRectangle(center._x - hw, center._y - hh, 2 * hw, 2 * hh)
 
 # Override method: contains
 
     def contains(self, x, y):
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
         rx = self._width / 2
         ry = self._height / 2
         tx = x - (self._x + rx)
@@ -1164,17 +980,13 @@ class GOval(GFillableObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object.
-        """
+        """Returns the type of this object."""
         return "GOval"
 
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GOval</code> in the canvas.
-        """
+        """Installs the GOval in the canvas."""
         gw = target
         tkc = gw._canvas
         self._ctm_base = ctm
@@ -1199,9 +1011,7 @@ class GOval(GFillableObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates the points for this <code>GOval</code> after a rotation.
-        """
+        """Updates the points for this GOval after a rotation."""
         gw = self._get_window()
         if gw is not None:
             if self._rep == "Oval":
@@ -1239,43 +1049,39 @@ class GOval(GFillableObject):
         return ("GOval(" + str(self._x) + ", " + str(self._y) + ", " +
                 str(self._width) + ", " + str(self._height) + ")")
 
-# Define camel-case names
-
-    setSize = set_size
-    setBounds = set_bounds
-    getBounds = get_bounds
-    getType = get_type
-
 # Class: GCompound
 
+# Implementation notes: GCompound
+# -------------------------------
+# This GObject subclass consists of a collection of other
+# graphical objects.  Once assembled, the internal objects can be
+# manipulated as a unit.  The GCompound keeps track of its own
+# position, and all items within it are drawn relative to that
+# location.
+
 class GCompound(GObject):
-    """
-    This graphical object subclass consists of a collection of other
-    graphical objects.  Once assembled, the internal objects can be
-    manipulated as a unit.  The <code>GCompound</code> keeps track
-    of its own position, and all items within it are drawn relative
-    to that location.
-    """
+    """This class represents a collection of graphical objects."""
 
 # Constructor: GCompound
 
     def __init__(self):
-        """
-        Creates a <code>GCompound</code> with no internal components.
-        """
+        """Creates a GCompound with no internal components."""
         GObject.__init__(self)
         self._contents = [ ]
 
 # Public method: add
 
     def add(self, gobj, x=None, y=None):
-        """
-        Adds a new graphical object to the <code>GCompound</code>.  The
-        first parameter is the object to be added.  The <code>x</code>
-        and <code>y</code> parameters are optional.  If they are supplied,
-        the location of the object is set to (<code>x</code>, <code>y</code>).
-        """
+        """Adds gobj to the GCompound, moving it to (x, y) if specified."""
+        if not isinstance(gobj, GObject):
+            raise TypeError("add: gobj must be a GObject")
+        if gobj._parent is not None:
+            raise ValueError("add: gobj has already been added")
         if x is not None:
+            if not _is_number(x):
+                raise TypeError("add: x must be a number")
+            if not _is_number(y):
+                raise TypeError("add: y must be a number")
             gobj.set_location(x, y)
         self._contents.append(gobj)
         gobj._parent = self
@@ -1289,9 +1095,9 @@ class GCompound(GObject):
 # Public method: remove
 
     def remove(self, gobj):
-        """
-        Removes the specified object from the <code>GCompound</code>.
-        """
+        """Removes the specified object from the GCompound."""
+        if not isinstance(gobj, GObject):
+            raise TypeError("remove: gobj must be a GObject")
         index = self._find_gobject(gobj)
         if index != -1:
             self._remove_at(index)
@@ -1302,9 +1108,7 @@ class GCompound(GObject):
 # Public method: remove_all
 
     def remove_all(self):
-        """
-        Removes all graphical objects from the <code>GCompound</code>.
-        """
+        """Removes all graphical objects from the GCompound."""
         while len(self._contents) > 0:
             self._remove_at(0)
         gw = self._get_window()
@@ -1314,11 +1118,11 @@ class GCompound(GObject):
 # Public method: get_element_at
 
     def get_element_at(self, x, y):
-        """
-        Returns the topmost <code>GObject</code> containing the
-        point (x, y), or <code>None</code> if no such object exists.
-        Coordinates are interpreted relative to the reference point.
-        """
+        """Returns the topmost GObject containing (x, y), or None."""
+        if not _is_number(x):
+            raise TypeError("get_element_at: x must be a number")
+        if not _is_number(y):
+            raise TypeError("get_element_at: y must be a number")
         for gobj in reversed(self._contents):
             if gobj.contains(x, y):
                 return gobj
@@ -1327,56 +1131,75 @@ class GCompound(GObject):
 # Public method: get_element_count
 
     def get_element_count(self):
-        """
-        Returns the number of graphical objects stored in the
-        <code>GCompound</code>.
-        """
+        """Returns the number of graphical objects in the GCompound."""
         return len(self._contents)
 
 # Public method: get_element
 
     def get_element(self, index):
-        """
-        Returns the graphical object at the specified index, numbering
-        from back to front in the the <i>z</i> dimension.
-        """
+        """Returns the graphical object at the specified index."""
+        if not isinstance(index, int):
+            raise TypeError("get_element: index must be an integer")
         return self._contents[index]
 
 # Override method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns a bounding rectangle for this compound.
-        """
+        """Returns a bounding rectangle for this compound."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("get_bounds: not defined after rotation")
+        if len(self._contents) == 0:
+            origin = lctm.transform(0, 0)
+            return GRectangle(origin._x, origin._y, 0, 0)
         x0 = self._x
         y0 = self._y
-        if len(self._contents) == 0:
-            return GRectangle(x0, y0, 0, 0)
         x_min = sys.float_info.max
         y_min = sys.float_info.max
         x_max = sys.float_info.min
         y_max = sys.float_info.min
         for gobj in self._contents:
-            bounds = gobj.get_bounds()
-            x_min = min(x_min, x0 + bounds._x)
-            y_min = min(y_min, y0 + bounds._y)
-            x_max = max(x_max, x0 + bounds._x)
-            y_max = max(y_max, y0 + bounds._y)
-            x_min = min(x_min, x0 + bounds._x + bounds.get_width())
-            y_min = min(y_min, y0 + bounds._y + bounds.get_height())
-            x_max = max(x_max, x0 + bounds._x + bounds.get_width())
-            y_max = max(y_max, y0 + bounds._y + bounds.get_height())
+            bb = gobj.get_bounds()
+            x_min = min(x_min, x0 + bb._x)
+            y_min = min(y_min, y0 + bb._y)
+            x_max = max(x_max, x0 + bb._x)
+            y_max = max(y_max, y0 + bb._y)
+            x_min = min(x_min, x0 + bb._x + bb.get_width())
+            y_min = min(y_min, y0 + bb._y + bb.get_height())
+            x_max = max(x_max, x0 + bb._x + bb.get_width())
+            y_max = max(y_max, y0 + bb._y + bb.get_height())
         return GRectangle(x_min, y_min, x_max - x_min, y_max - y_min)
 
 # Public method: contains
 
     def contains(self, x, y):
-        """
-        Returns true if the specified point is inside the object.
-        """
-        refpt = self.get_location()
-        tx = x - refpt._x
-        ty = y - refpt._y
+        """Returns True if the specified point is inside the object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
+#        refpt = self.get_location()
+#        tx = x - refpt._x
+#        ty = y - refpt._y
+        tx = x
+        ty = y
         for gobj in self._contents:
             if gobj.contains(tx, ty):
                 return True
@@ -1385,9 +1208,7 @@ class GCompound(GObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object
-        """
+        """Returns the type of this object"""
         return "GCompound"
 
 # Public method: __str__
@@ -1398,10 +1219,7 @@ class GCompound(GObject):
 # Override method: _update_location
 
     def _update_location(self):
-        """
-        Updates the location for this <code>GCompound</code> by
-        rebuilding the entire window if the component is installed.
-        """
+        """Updates the location for this GCompound."""
         gw = self._get_window()
         if gw is not None:
             gw._rebuild()
@@ -1409,9 +1227,7 @@ class GCompound(GObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Redraws the window on rotation.
-        """
+        """Redraws the window on rotation."""
         gw = self._get_window()
         if gw is not None:
             gw._rebuild()
@@ -1419,9 +1235,7 @@ class GCompound(GObject):
 # Override method: _update_visible
 
     def _update_visible(self):
-        """
-        Redraws the window on set_visible
-        """
+        """Redraws the window on set_visible"""
         gw = self._get_window()
         if gw is not None:
             gw._rebuild()
@@ -1503,49 +1317,28 @@ class GCompound(GObject):
         self._contents.pop(index)
         gobj._parent = None
 
-# Define camel-case names
-
-    removeAll = remove_all
-    getElementAt = get_element_at
-    getElementCount = get_element_count
-    getElement = get_element
-    getBounds = get_bounds
-    getType = get_type
-
 # Class: GArc
 
+# Implementation notes: GArc
+# --------------------------
+# This GObject subclass represents an elliptical arc defined
+# by the following parameters:
+#
+# The coordinates of the bounding rectangle (x, y, width, height)
+# The angle at which the arc starts (start)
+# The number of degrees that the arc covers (sweep)
+#
+# All angles in a GArc description are measured in degrees moving
+# counterclockwise from the +x axis.  Negative values for either start
+# or sweep indicate motion in a clockwise direction.
+
 class GArc(GFillableObject):
-    """
-    This graphical object subclass represents an elliptical arc.  The
-    arc is specified by the following parameters:
-
-    <ul>
-       <li>The coordinates of the bounding rectangle (x, y, width, height)</li>
-       <li>The angle at which the arc starts (start)</li>
-       <li>The number of degrees that the arc covers (sweep)</li>
-    </ul>
-
-    All angles in a <code>GArc</code> description are measured in
-    degrees moving counterclockwise from the +<i>x</i> axis.  Negative
-    values for either <code>start</code> or <code>sweep</code> indicate
-    motion in a clockwise direction.
-    """
+    """This GObject subclass represents an elliptical arc."""
 
 # Constructor: GArc
 
     def __init__(self, a1, a2, a3=None, a4=None, a5=None, a6=None):
-        """
-        The <code>GArc</code> constructor takes either of the following
-        forms:
-
-        <pre>
-           GArc(width, height, start, sweep)
-           GArc(x, y, width, height, start, sweep)
-        </pre>
-
-        If the <code>x</code> and <code>y</code> parameters are missing,
-        the origin is set to (0, 0).
-        """
+        """Creates a new GArc."""
         GFillableObject.__init__(self)
         if a5 is None:
             x = 0
@@ -1561,6 +1354,18 @@ class GArc(GFillableObject):
             height = a4
             start = a5
             sweep = a6
+        if not _is_number(x):
+            raise TypeError("GArc: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GArc: y must be a number")
+        if not _is_number(width):
+            raise TypeError("GArc: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GArc: height must be a number")
+        if not _is_number(start):
+            raise TypeError("GArc: start must be a number")
+        if not _is_number(sweep):
+            raise TypeError("GArc: sweep must be a number")
         self._frame_width = width
         self._frame_height = height
         self._start = start
@@ -1571,62 +1376,60 @@ class GArc(GFillableObject):
 # Public method: set_start_angle
 
     def set_start_angle(self, start):
-        """
-        Sets the starting angle for this <code>GArc</code> object.
-        """
+        """Sets the starting angle for this GArc object."""
+        if not _is_number(start):
+            raise TypeError("set_start_angle: start must be a number")
         self._start = start
         self._update_properties(start=start)
 
 # Public method: get_start_angle
 
     def get_start_angle(self):
-        """
-        Returns the starting angle for this GArc object.
-        """
+        """Returns the starting angle for this GArc object."""
         return self._start
 
 # Public method: set_sweep_angle
 
     def set_sweep_angle(self, sweep):
-        """
-        Sets the sweep angle for this GArc object.
-        """
+        """Sets the sweep angle for this GArc object."""
+        if not _is_number(sweep):
+            raise TypeError("set_sweep_angle: sweep must be a number")
         self._sweep = sweep
         self._update_properties(extent=sweep)
 
 # Public method: get_sweep_angle
 
     def get_sweep_angle(self):
-        """
-        Returns the sweep angle for this GArc object.
-        """
+        """Returns the sweep angle for this GArc object."""
         return self._sweep
 
 # Public method: get_start_point
 
     def get_start_point(self):
-        """
-        Returns the point at which the arc starts.
-        """
+        """Returns the point at which the arc starts."""
         return self._get_arc_point(self._start)
 
 # Public method: get_end_point
 
     def get_end_point(self):
-        """
-        Returns the point at which the arc ends.
-        """
+        """Returns the point at which the arc ends."""
         return self._get_arc_point(self._start + self._sweep)
 
 # Public method: set_frame_rectangle
 
     def set_frame_rectangle(self, x, y=None, width=None, height=None):
-        """
-        Changes the boundaries of the rectangle used to frame the arc.
-        """
+        """Changes the bounds of the rectangle used to frame the arc."""
         if isinstance(x, GRectangle):
             width, height = x.get_width(), x.get_height()
             x, y = x.get_x(), x.get_y()
+        if not _is_number(x):
+            raise TypeError("set_frame_rectangle: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_frame_rectangle: y must be a number")
+        if not _is_number(width):
+            raise TypeError("set_frame_rectangle: width must be a number")
+        if not _is_number(height):
+            raise TypeError("set_frame_rectangle: height must be a number")
         self.set_location(x, y)
         gw = self._get_window()
         if gw is None:
@@ -1639,23 +1442,14 @@ class GArc(GFillableObject):
 # Public method: get_frame_rectangle
 
     def get_frame_rectangle(self):
-        """
-        Returns the boundaries of the rectangle used to frame the arc.
-        """
+        """Returns the bounds of the rectangle used to frame the arc."""
         return GRectangle(self._x, self._y,
                           self._frame_width, self._frame_height)
 
 # Override method: set_filled
 
     def set_filled(self, flag):
-        """
-        Sets the fill status for the arc, where <code>False</code> is
-        outlined and <code>True</code> is filled.  If a <code>GArc</code>
-        is unfilled, the figure consists only of the arc itself.  If a
-        <code>GArc</code> is filled, the figure consists of the
-        pie-shaped wedge formed by connecting the endpoints of the arc to
-        the center.
-        """
+        """Sets the fill flag for the arc (False=outlined, True=filled)."""
         GFillableObject.set_filled(self, flag)
         style = tkinter.ARC
         if flag:
@@ -1665,9 +1459,14 @@ class GArc(GFillableObject):
 # Public method: get_bounds
 
     def get_bounds(self):
-        """
-        Gets the bounding rectangle for this object
-        """
+        """Gets the bounding rectangle for this object"""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("get_bounds: not defined after rotation")
         rx = self._frame_width / 2
         ry = self._frame_height / 2
         cx = self._x + rx
@@ -1700,9 +1499,24 @@ class GArc(GFillableObject):
 # Public method: contains
 
     def contains(self, x, y):
-        """
-        Returns true if the specified point is inside the object.
-        """
+        """Returns True if the specified point is inside the object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
         rx = self._frame_width / 2
         ry = self._frame_height / 2
         if rx == 0 or ry == 0:
@@ -1722,9 +1536,7 @@ class GArc(GFillableObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object
-        """
+        """Returns the type of this object"""
         return "GArc"
 
 # Public method: __str__
@@ -1738,9 +1550,7 @@ class GArc(GFillableObject):
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GArc</code> in the canvas.
-        """
+        """Installs the GArc in the canvas."""
         gw = target
         tkc = gw._canvas
         lctm = _GTransform(rotation=self._angle + ctm._rotation,
@@ -1797,13 +1607,12 @@ class GArc(GFillableObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates the points for this <code>GArc</code> after a rotation.
-        """
+        """Updates the points for this GArc after a rotation."""
         gw = self._get_window()
         if gw is not None:
             tkc = gw._canvas
             ctm = self._ctm_base
+            p0 = ctm.transform(self._x, self._y)
             lctm = _GTransform(rotation=self._angle + ctm._rotation,
                                sf=self._sf * ctm._sf)
             coords = self._create_arc_coords(p0._x, p0._y,
@@ -1816,26 +1625,22 @@ class GArc(GFillableObject):
 # Override method: _update_color
 
     def _update_color(self):
-        """
-        Updates the color properties for a <code>GArc</code>.
-        """
+        """Updates the color properties for a GArc."""
         if self._fill_flag:
             outline = self._color
             fill = self._fill_color
             if fill is None or fill == "":
                 fill = outline
             self._update_properties(outline=outline, fill=fill)
+        elif self._rep == "Polygon":
+            self._update_properties(fill=self._color)
         else:
             self._update_properties(outline=self._color, fill="")
 
 # Private method: _create_arc_coords
 
     def _create_arc_coords(self, x, y, width, height, start, sweep, fill, ctm):
-        """
-        Creates an array of coordinates for an elliptical arc inside the
-        bounding box with the specified start and sweep values.  The ctm
-        parameter represents the local transformation.
-        """
+        """Creates an array of coordinates for an elliptical arc."""
         n = max(3, round(abs(sweep) / 30))
         dth = sweep / n
         r1 = width / 2
@@ -1850,7 +1655,7 @@ class GArc(GFillableObject):
         if fill:
             pt = ctm.transform(r1, r2)
             center = [ x + pt._x, y + pt._y ]
-            coords = center + coords[0:2] + coords + coords[-2:]
+            coords = center + center + coords[0:2] + coords + coords[-2:]
         return coords
         
 # Private method: _get_arc_point
@@ -1893,37 +1698,25 @@ class GArc(GFillableObject):
         else:
             return (theta >= start and theta <= start + sweep)
 
-# Define camel-case names
-
-    setStartAngle = set_start_angle
-    getStartAngle = get_start_angle
-    setSweepAngle = set_sweep_angle
-    getSweepAngle = get_sweep_angle
-    getStartPoint = get_start_point
-    getEndPoint = get_end_point
-    setFrameRectangle = set_frame_rectangle
-    getFrameRectangle = get_frame_rectangle
-    setFilled = set_filled
-    getBounds = get_bounds
-    getType = get_type
 
 # Class: GLine
 
 class GLine(GObject):
-    """
-    This graphical object subclass represents a line segment.
-    """
+    """This GObject subclass represents a line segment."""
 
 # Constructor: GLine
 
     def __init__(self, x0, y0, x1, y1):
-        """
-        Initializes a line segment from its endpoints.  The point
-        (<code>x0</code>, <code>y0</code>) defines the start of the
-        line and the point (<code>x1</code>, <code>y1</code>) defines
-        the end.
-        """
+        """Initializes a line segment from its endpoints."""
         GObject.__init__(self)
+        if not _is_number(x0):
+            raise TypeError("GLine: x0 must be a number")
+        if not _is_number(y0):
+            raise TypeError("GLine: y0 must be a number")
+        if not _is_number(x1):
+            raise TypeError("GLine: x1 must be a number")
+        if not _is_number(y1):
+            raise TypeError("GLine: y1 must be a number")
         self._x = x0
         self._y = y0
         self._dx = x1 - x0
@@ -1932,12 +1725,11 @@ class GLine(GObject):
 # Public method: set_start_point
 
     def set_start_point(self, x, y):
-        """
-        Sets the initial point to (<code>x</code>, <code>y</code>),
-        leaving the end point unchanged.  This method is therefore
-        different from <code>set_location</code>, which moves both
-        components of the line segment.
-        """
+        """Sets the initial point to (x, y), leaving the end unchanged."""
+        if not _is_number(x):
+            raise TypeError("set_start_point: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_start_point: y must be a number")
         self._dx += self._x - x
         self._dy += self._y - y
         self._x = x
@@ -1947,18 +1739,17 @@ class GLine(GObject):
 # Public method: get_start_point
 
     def get_start_point(self):
-        """
-        Returns the point at which the line starts.
-        """
+        """Returns the point at which the line starts."""
         return GPoint(self._x, self._y)
 
 # Public method: set_end_point
 
     def set_end_point(self, x, y):
-        """
-        Sets the end point in the line to (x, y), leaving the start point
-        unchanged.
-        """
+        """Sets the end point to (x, y), leaving the start unchanged."""
+        if not _is_number(x):
+            raise TypeError("set_end_point: x must be a number")
+        if not _is_number(y):
+            raise TypeError("set_end_point: y must be a number")
         self._dx = x - self._x
         self._dy = y - self._y
         self._update_points()
@@ -1966,17 +1757,30 @@ class GLine(GObject):
 # Public method: get_end_point
 
     def get_end_point(self):
-        """
-        Returns the point at which the line ends.
-        """
+        """Returns the point at which the line ends."""
         return GPoint(self._x + self._dx, self._y + self._dy)
 
 # Overload method: contains
 
     def contains(self, x, y):
-        """
-        Returns true if the specified point is inside the object.
-        """
+        """Returns True if the specified point is inside the object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
         x0 = self._x
         y0 = self._y
         x1 = x0 + self._dx
@@ -2003,9 +1807,7 @@ class GLine(GObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object
-        """
+        """Returns the type of this object"""
         return "GLine"
 
 # Public method: __str__
@@ -2017,24 +1819,29 @@ class GLine(GObject):
 # Override method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounds of this <code>GLine</code>.
-        """
-        x0 = min(self._x, self._x + self._dx)
-        y0 = min(self._y, self._y + self._dy)
-        x1 = max(self._x, self._x + self._dx)
-        y1 = max(self._y, self._y + self._dy)
+        """Returns the bounds of this GLine."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("get_bounds: not defined after rotation")
+        p0 = lctm.transform(0, 0)
+        p1 = lctm.transform(self._dx, self._dy)
+        x0 = min(p0._x, p1._x)
+        y0 = min(p0._y, p1._y)
+        x1 = max(p0._x, p1._x)
+        y1 = max(p0._y, p1._y)
         return GRectangle(x0, y0, x1 - x0, y1 - y0)
 
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GLine</code> in the canvas.
-        """
+        """Installs the GLine in the canvas."""
         gw = target
         tkc = gw._canvas
-        self._base_ctm = ctm
+        self._ctm_base = ctm
         p0 = ctm.transform(self._x, self._y)
         angle = ctm._rotation + self._angle
         ctm = _GTransform(rotation=angle, sf=ctm._sf)
@@ -2051,14 +1858,12 @@ class GLine(GObject):
 # Override method: _update_points
 
     def _update_points(self):
-        """
-        Updates the points in the <code>GLine</code>.
-        """
+        """Updates the points in the GLine."""
         gw = self._get_window()
         if gw is None:
             return
         tkc = gw._canvas
-        ctm = self._base_ctm
+        ctm = self._ctm_base
         p0 = ctm.transform(self._x, self._y)
         angle = ctm._rotation + self._angle
         ctm = _GTransform(rotation=angle, sf=ctm._sf)
@@ -2068,32 +1873,17 @@ class GLine(GObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates the points for this <code>GLine</code> after a rotation.
-        """
+        """Updates the points for this GLine after a rotation."""
         self._update_points()
 
-# Define camel-case names
-
-    setStartPoint = set_start_point
-    getStartPoint = get_start_point
-    setEndPoint = set_end_point
-    getEndPoint = get_end_point
-    getType = get_type
 
 # Class: GImage
 
 class GImage(GObject):
-    """
-    This graphical object subclass represents an image from a file.
-    """
+    """This GObject subclass represents an image from a file."""
 
     def __init__(self, source, x=0, y=0):
-        """
-        Initializes a new image by loading the image from the specified
-        source, which must be the name of a file containing the image, a
-        URL that holds a remote image, or a two-dimensional array of pixels.
-        """
+        """Initializes a new image loaded from the source."""
         GObject.__init__(self)
         self._source = source
         self._image_model = _image_model
@@ -2135,18 +1925,21 @@ class GImage(GObject):
 # Public method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounding rectangle for this object
-        """
+        """Returns the bounding rectangle for this object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("get_bounds: not defined after rotation")
         photo = self._photo
         return GRectangle(self._x, self._y, photo.width(), photo.height())
 
 # Public method: get_pixel_array
 
     def get_pixel_array(self):
-        """
-        Returns a two-dimensional array of integers containing the pixel data.
-        """
+        """Returns an array of integers containing the pixel data."""
         if self._image_model == "PIL":
             image = self._image
             width = image.width
@@ -2167,12 +1960,22 @@ class GImage(GObject):
                     pixels[i][j] = p
         return pixels
 
+# Public method: save
+
+    def save(self, filename):
+        """Saves the image to the specified file."""
+        if not isinstance(filename, str):
+            raise TypeError("save: filename must be a string")
+        if self._image_model != "PIL":
+            raise Exception("Image scaling is available only if PIL is loaded")
+        self._image.save(filename)
+
 # Override method: scale
 
     def scale(self, sf):
-        """
-        Scales the GImage by the specified scale factor.
-        """
+        """Scales the GImage by the specified scale factor."""
+        if not _is_number(sf):
+            raise TypeError("scale: sf must be a number")
         if self._image_model != "PIL":
             raise Exception("Image scaling is available only if PIL is loaded")
         self._sf *= sf
@@ -2183,17 +1986,13 @@ class GImage(GObject):
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object.
-        """
+        """Returns the type of this object."""
         return "GImage"
 
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GImage</code> in the canvas.
-        """
+        """Installs the GImage in the canvas."""
         gw = target
         tkc = gw._canvas
         pt = ctm.transform(self._x, self._y)
@@ -2233,9 +2032,7 @@ class GImage(GObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates this <code>GImage</code> after a rotation.
-        """
+        """Updates this GImage after a rotation."""
         gw = self._get_window()
         if gw is not None:
             gw._rebuild()
@@ -2244,46 +2041,35 @@ class GImage(GObject):
 
     @staticmethod
     def get_red(pixel):
-        """
-        Returns the red component of the pixel.
-        """
+        """Returns the red component of the pixel."""
         return pixel >> 16 & 0xFF
 
 # Static method: get_green
 
     @staticmethod
     def get_green(pixel):
-        """
-        Returns the green component of the pixel.
-        """
+        """Returns the green component of the pixel."""
         return pixel >> 8 & 0xFF
 
 # Static method: get_blue
 
     @staticmethod
     def get_blue(pixel):
-        """
-        Returns the blue component of the pixel.
-        """
+        """Returns the blue component of the pixel."""
         return pixel & 0xFF
 
 # Static method: get_alpha
 
     @staticmethod
     def get_alpha(pixel):
-        """
-        Returns the alpha component of the pixel.
-        """
+        """Returns the alpha component of the pixel."""
         return pixel >> 24 & 0xFF
 
 # Static method: create_rgb_pixel
 
     @staticmethod
     def create_rgb_pixel(a1=None, a2=None, a3=None, a4=None, **kw):
-        """
-        Creates an RGB pixel from the arguments.  The kw dictionary allows
-        clients to name these parameters to override the conventional order.
-        """
+        """Creates an rgb pixel from the arguments."""
         if a4 is None:
             a = 0xFF
             r = a1
@@ -2312,23 +2098,11 @@ class GImage(GObject):
         else:
             return "GImage(<data>)"
 
-# Define camel-case names
-
-    getBounds = get_bounds
-    getPixelArray = get_pixel_array
-    getType = get_type
-    getRed = get_red
-    getGreen = get_green
-    getBlue = get_blue
-    getAlpha = get_alpha
-    createRGBPixel = create_rgb_pixel
 
 # Class: GLabel
 
 class GLabel(GObject):
-    """
-    This graphical object subclass represents a text string.
-    """
+    """This GObject subclass represents a text string."""
 
 # Constants
 
@@ -2337,11 +2111,13 @@ class GLabel(GObject):
 # Constructor: GLabel
 
     def __init__(self, text, x=0, y=0):
-        """
-        Initializes a <code>GLabel</code> object containing the specified
-        string.  By default, the baseline of the first character appears
-        at the origin.
-        """
+        """Initializes a GLabel object containing the specified string."""
+        if not isinstance(text, str):
+            raise TypeError("GLabel: text must be a string")
+        if not _is_number(x):
+            raise TypeError("GLabel: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GLabel: y must be a number")
         GObject.__init__(self)
         self._text = text
         self._font = self.DEFAULT_FONT
@@ -2351,11 +2127,9 @@ class GLabel(GObject):
 # Public method: set_font
 
     def set_font(self, font):
-        """
-        Changes the font used to display the GLabel as specified by
-        <code>font</code>, which has the form <code>family-style-size</code>,
-        where both <code>style</code> and <code>size</code> are optional.
-        """
+        """Changes the font used to display the GLabel."""
+        if not isinstance(font, str):
+            raise TypeError("set_font: font must be a string")
         self._font = font
         self._tk_font = _decode_font(self._font)
         self._update_properties(font=self._tk_font)
@@ -2364,88 +2138,76 @@ class GLabel(GObject):
 # Public method: get_font
 
     def get_font(self):
-        """
-        Returns the current font for the GLabel.
-        """
+        """Returns the current font for the GLabel."""
         return self._font
 
 # Public method: set_label
 
     def set_label(self, text):
-        """
-        Changes the string stored within the GLabel object, so that
-        a new text string appears on the display.
-        """
+        """Changes the string stored within the GLabel object."""
+        if not isinstance(text, str):
+            raise TypeError("set_label: text must be a string")
         self._text = text
         self._update_properties(text=text)
 
 # Public method: get_label
 
     def get_label(self):
-        """
-        Returns the string displayed by this object.
-        """
+        """Returns the string displayed by this object."""
         return self._text
 
 # Public method: get_ascent
 
     def get_ascent(self):
-        """
-        Returns the maximum distance strings in this font extend above
-        the baseline.
-        """
+        """Returns the maximum distance strings extend above the baseline."""
         return self._tk_font.metrics("ascent")
 
 # Public method: get_descent
 
     def get_descent(self):
-        """
-        Returns the maximum distance strings in this font descend below
-        the baseline.
-        """
+        """Returns the maximum distance strings descend below the baseline."""
         return self._tk_font.metrics("descent")
 
 # Override method: get_width
 
     def get_width(self):
-        """
-        Returns the width for this <code>GLabel</code>.
-        """
+        """Returns the width for this GLabel."""
         return self._tk_font.measure(self._text)
 
 # Override method: get_height
 
     def get_height(self):
-        """
-        Returns the height for this <code>GLabel</code>.
-        """
+        """Returns the height for this GLabel."""
         return self._tk_font.metrics("linespace")
 
 # Override method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounding rectangle for this object.
-        """
+        """Returns the bounding rectangle for this object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("get_bounds: not defined after rotation")
         return GRectangle(self._x, self._y - self.get_ascent(),
                           self.get_width(), self.get_height())
 
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object.
-        """
+        """Returns the type of this object."""
         return "GLabel"
 
 # Override method: _update_location
 
+# Implementation notes: _update_location
+# --------------------------------------
+# This override is necessary to adjust for the baseline.
+
     def _update_location(self):
-        """
-        Updates the location for this <code>GLabel</code> from the stored
-        x and y values.  This override is necessary to adjust for the
-        baseline.
-        """
+        """Updates the location for this GLabel."""
         gw = self._get_window()
         if gw is None:
             return
@@ -2465,9 +2227,7 @@ class GLabel(GObject):
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GLabel</code> in the canvas.
-        """
+        """Installs the GLabel in the canvas."""
         gw = target
         tkc = gw._canvas
         self._ctm_base = ctm
@@ -2501,9 +2261,7 @@ class GLabel(GObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates this <code>GLabel</code> after a rotation.
-        """
+        """Updates this GLabel after a rotation."""
         gw = self._get_window()
         if gw is None:
             return
@@ -2516,36 +2274,16 @@ class GLabel(GObject):
     def __str__(self):
         return "GLabel(\"" + self._text + "\")"
 
-# Define camel-case names
-
-    setFont = set_font
-    getFont = get_font
-    setLabel = set_label
-    getLabel = get_label
-    getAscent = get_ascent
-    getDescent = get_descent
-    getWidth = get_width
-    getHeight = get_height
-    getBounds = get_bounds
-    getType = get_type
 
 # Class: GPolygon
 
 class GPolygon(GFillableObject):
-    """
-    This graphical object subclass represents a polygon bounded by line
-    segments.  The <code>GPolygon</code> constructor creates an empty
-    polygon.  To complete the figure, you need to add vertices to the
-    polygon using some combination of the methods <code>add_vertex</code>,
-    <code>add_edge</code>, and <code>add_polar_edge</code>.
-    """
+    """This GObject subclass represents a polygon bounded by line segments."""
 
 # Constructor: GPolygon
 
     def __init__(self):
-        """
-        Initializes a new empty polygon at the origin.
-        """
+        """Initializes a new empty polygon at the origin."""
         GFillableObject.__init__(self)
         self._cx = None
         self._cy = None
@@ -2554,10 +2292,11 @@ class GPolygon(GFillableObject):
 # Public method: add_vertex
 
     def add_vertex(self, x, y):
-        """
-        Adds a vertex at (<code>x</code>, <code>y</code>) relative to the
-        polygon origin.
-        """
+        """Adds a vertex at (x, y) relative to the polygon origin."""
+        if not _is_number(x):
+            raise TypeError("add_vertex: x must be a number")
+        if not _is_number(y):
+            raise TypeError("add_vertex: y must be a number")
         self._cx = x
         self._cy = y
         self._vertices.append(GPoint(x, y))
@@ -2565,98 +2304,81 @@ class GPolygon(GFillableObject):
 # Public method: add_edge
 
     def add_edge(self, dx, dy):
-        """
-        Adds an edge to the polygon whose components are given by the
-        displacements <code>dx</code> and <code>dy</code> from the
-        last vertex.
-        """
+        """Adds an edge to the polygon using the displacements dx and dy."""
+        if not _is_number(dx):
+            raise TypeError("add_edge: dx must be a number")
+        if not _is_number(dy):
+            raise TypeError("add_edge: dy must be a number")
         self.add_vertex(self._cx + dx, self._cy + dy)
 
 # Public method: add_polar_edge
 
     def add_polar_edge(self, r, theta):
-        """
-        Adds an edge to the polygon specified in polar coordinates.  The
-        length of the edge is given by <code>r</code>, and the edge extends
-        in direction <code>theta</code>, measured in degrees counterclockwise
-        from the +<i>x</i> axis.
-        """
+        """Adds an edge to the polygon specified in polar coordinates."""
+        if not _is_number(r):
+            raise TypeError("add_polar_edge: r must be a number")
+        if not _is_number(theta):
+            raise TypeError("add_polar_edge: theta must be a number")
         self.add_edge(r * math.cos(theta * math.pi / 180),
                       -r * math.sin(theta * math.pi / 180))
 
 # Public method: get_vertices
 
     def get_vertices(self):
-        """
-        Returns a list of the points in the polygon.
-        """
+        """Returns a list of the points in the polygon."""
         return self._vertices
 
 # Public method: get_bounds
 
     def get_bounds(self):
-        """
-        Returns the bounding rectangle for this object.
-        """
-        x_min = 0
-        y_min = 0
-        x_max = 0
-        y_max = 0
-        for i in range(len(self._vertices)):
-            x = self._vertices[i]._x
-            y = self._vertices[i]._y
-            if i == 0 or x < x_min:
-                x_min = x
-            if i == 0 or y < y_min:
-                y_min = y
-            if i == 0 or x > x_max:
-                x_max = x
-            if i == 0 or y > y_max:
-                y_max = y
-        x0 = self._x
-        y0 = self._y
-        return GRectangle(x0 + x_min, y0 + y_min, x_max - x_min, y_max - y_min)
+        """Returns the bounding rectangle for this object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        vertices = [ lctm.transform(v) for v in self._vertices ]
+        return GPolygon._polygon_bounds(vertices)
 
 # Public method: contains
 
     def contains(self, x, y):
-        """
-        Returns true if the specified point is inside the object.
-        """
-        tx = x - self._x
-        ty = y - self._y
-        crossings = 0
-        n = len(self._vertices)
-        if n < 2:
-            return False
-        if self._vertices[0] == self._vertices[n - 1]:
-            n = n - 1
-        x0 = self._vertices[0]._x
-        y0 = self._vertices[0]._y
-        for i in range(1, n + 1):
-            x1 = self._vertices[i % n]._x
-            y1 = self._vertices[i % n]._y
-            if (y0 > ty) != (y1 > ty):
-                if tx - x0 < (x1 - x0) * (ty - y0) / (y1 - y0):
-                    crossings = crossings + 1
-            x0 = x1
-            y0 = y1
-        return (crossings % 2 == 1)
+        """Returns True if the specified point is inside the object."""
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        if lctm._rotation != 0:
+            raise NotImplementedError("contains: not defined after rotation")
+        if isinstance(x, GPoint):
+            x, y = x.get_x(), x.get_y()
+        elif isinstance(x, dict):
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
+        ctm = self._ctm_base
+        lctm = _GTransform(tx=self._x + ctm._tx,
+                           ty=self._y + ctm._ty,
+                           rotation=self._angle + ctm._rotation,
+                           sf=self._sf * ctm._sf)
+        vertices = [ lctm.transform(v) for v in self._vertices ]
+        return GPolygon._inside_polygon(x, y, vertices)
 
 # Override method: get_type
 
     def get_type(self):
-        """
-        Returns the type of this object.
-        """
+        """Returns the type of this object."""
         return "GPolygon"
 
 # Override method: _update_location
 
     def _update_location(self):
-        """
-        Updates the location for this object from the stored x and y values.
-        """
+        """Updates the location for this object."""
         gw = self._get_window()
         if gw is None:
             return
@@ -2672,9 +2394,7 @@ class GPolygon(GFillableObject):
 # Override method: _update_rotation
 
     def _update_rotation(self):
-        """
-        Updates this <code>GPolygon</code> after a rotation.
-        """
+        """Updates this GPolygon after a rotation."""
         gw = self._get_window()
         if gw is None:
             return
@@ -2685,9 +2405,7 @@ class GPolygon(GFillableObject):
 # Override method: _install
 
     def _install(self, target, ctm):
-        """
-        Installs the <code>GPolygon</code> in the canvas.
-        """
+        """Installs the GPolygon in the canvas."""
         gw = target
         tkc = gw._canvas
         self._ctm_base = ctm
@@ -2714,34 +2432,69 @@ class GPolygon(GFillableObject):
             coords.append(tp._y)
         return coords
 
-# Define camel-case names
+# Private static method: _polygon_bounds
 
-    addVertex = add_vertex
-    addEdge = add_edge
-    addPolarEdge = add_polar_edge
-    getVertices = get_vertices
-    getBounds = get_bounds
-    getType = get_type
+    @staticmethod
+    def _polygon_bounds(vertices):
+        x_min = 0
+        y_min = 0
+        x_max = 0
+        y_max = 0
+        for i in range(len(vertices)):
+            x = vertices[i]._x
+            y = vertices[i]._y
+            if i == 0 or x < x_min:
+                x_min = x
+            if i == 0 or y < y_min:
+                y_min = y
+            if i == 0 or x > x_max:
+                x_max = x
+            if i == 0 or y > y_max:
+                y_max = y
+        return GRectangle(x_min, y_min, x_max - x_min, y_max - y_min)
+
+# Private static method: _inside_polygon
+
+    @staticmethod
+    def _inside_polygon(x, y, vertices):
+        crossings = 0
+        n = len(vertices)
+        if n < 2:
+            return False
+        if vertices[0] == vertices[n - 1]:
+            n = n - 1
+        x0 = vertices[0]._x
+        y0 = vertices[0]._y
+        for i in range(1, n + 1):
+            x1 = vertices[i % n]._x
+            y1 = vertices[i % n]._y
+            if (y0 > y) != (y1 > y):
+                if x - x0 < (x1 - x0) * (y - y0) / (y1 - y0):
+                    crossings = crossings + 1
+            x0 = x1
+            y0 = y1
+        return (crossings % 2 == 1)
 
 # Class: GPoint
 
 class GPoint:
-    """
-    This class contains real-valued x and y fields. It is used to represent
-    a location on the graphics plane.
-    """
+    """This class represents a location on the graphics plane."""
 
 # Constructor: GPoint
 
     def __init__(self, x=0, y=0):
         """Initializes a point with the specified coordinates."""
+        if not _is_number(x):
+            raise TypeError("GPoint: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GPoint: y must be a number")
         self._x = x
         self._y = y
 
 # Public method: get_x
 
     def get_x(self):
-        """Returns the x component of the point."""
+        """Returns the x component of the point"""
         return self._x
 
 # Public method: get_y
@@ -2764,42 +2517,33 @@ class GPoint:
             return self._x == other._x and self._y == other._y
         return False
 
-# Define camel-case names
-
-    getX = get_x
-    getY = get_y
 
 # Class: GDimension
 
 class GDimension:
-    """
-    This class contains real-valued witdth and height fields.  It is
-    used to indicate the size of a graphical object.
-    """
+    """This class represents the size of a graphical object."""
 
 # Constructor: GDimension
 
     def __init__(self, width=0.0, height=0.0):
-        """
-        Initializes a <code>GDimension</code> object with the specified size.
-        """
+        """Initializes a GDimension object with the specified size."""
+        if not _is_number(width):
+            raise TypeError("GDimension: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GDimension: height must be a number")
         self._width = width
         self._height = height
 
 # Public method: get_width
 
     def get_width(self):
-        """
-        Returns the width component of the <code>GDimension</code>.
-        """
+        """Returns the width component of the GDimension."""
         return self._width
 
 # Public method: get_height
 
     def get_height(self):
-        """
-        Returns the height component of the <code>GDimension</code>.
-        """
+        """Returns the height component of the GDimension."""
         return self._height
 
 # Public method: __str__
@@ -2815,26 +2559,24 @@ class GDimension:
                     self._height == other._height)
         return False
 
-# Define camel-case names
-
-    getWidth = get_width
-    getHeight = get_height
 
 # Class: GRectangle
 
 class GRectangle:
-    """
-    This type contains real-valued x, y, width, and height fields. It is
-    used to represent the bounding box of a graphical object.
-    """
+    """This type represents the bounding box of a graphical object."""
 
 # Constructor: GRectangle
 
     def __init__(self, x=0.0, y=0.0, width=0.0, height=0.0):
-        """
-        Initializes a <code>GRectangle</code> object with the specified
-        fields.
-        """
+        """Initializes a GRectangle object with the specified fields."""
+        if not _is_number(x):
+            raise TypeError("GRectangle: x must be a number")
+        if not _is_number(y):
+            raise TypeError("GRectangle: y must be a number")
+        if not _is_number(width):
+            raise TypeError("GRectangle: width must be a number")
+        if not _is_number(height):
+            raise TypeError("GRectangle: height must be a number")
         self._x = x
         self._y = y
         self._width = width
@@ -2843,54 +2585,47 @@ class GRectangle:
 # Public method: get_x
 
     def get_x(self):
-        """
-        Returns the x component of the upper left corner.
-        """
+        """Returns the x component of the upper left corner."""
         return self._x
 
 # Public method: get_y
 
     def get_y(self):
-        """
-        Returns the x component of the upper left corner.
-        """
+        """Returns the x component of the upper left corner."""
         return self._y
 
 # Public method: get_width
 
     def get_width(self):
-        """
-        Returns the width component of the GRectangle.
-        """
+        """Returns the width component of the GRectangle."""
         return self._width
 
 # Public method: get_height
 
     def get_height(self):
-        """
-        Returns the width component of the GRectangle.
-        """
+        """Returns the width component of the GRectangle."""
         return self._height
 
 # Public method: is_empty
 
     def is_empty(self):
-        """
-        Returns <code>True</code> if the rectangle is empty.
-        """
+        """Returns True if the rectangle is empty."""
         return self._width <= 0 or self._height <= 0
 
 # Public method: add
 
     def add(self, x, y=None):
-        """
-        Adds a <code>GPoint</code> or <code>x</code>/<code>y</code> pair
-        to this <code>GRectangle</code>.
-        """
+        """Adds a GPoint or x/y pair to this GRectangle."""
         if isinstance(x, GPoint):
             x, y = x.get_x(), x.get_y()
         elif isinstance(x, dict):
-            x, y = x.x, x.y
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("add: x must be a number")
+        if not _is_number(y):
+            raise TypeError("add: y must be a number")
         if x < self._x:
             self._width += self._x - x
             self._x = x
@@ -2904,15 +2639,18 @@ class GRectangle:
         
 # Public method: contains
 
-    def contains(self, x, y=None):
-        """
-        Returns <code>True</code> if the specified point is inside the
-        rectangle.
-        """
+    def contains(self, x, y):
+        """Returns True if the specified point is inside the rectangle."""
         if isinstance(x, GPoint):
             x, y = x.get_x(), x.get_y()
         elif isinstance(x, dict):
-            x, y = x.x, x.y
+            x, y = x["x"], x["y"]
+        elif isinstance(x, tuple):
+            x, y = x
+        if not _is_number(x):
+            raise TypeError("contains: x must be a number")
+        if not _is_number(y):
+            raise TypeError("contains: y must be a number")
         return (x >= self._x and
                 y >= self._y and
                 x < self._x + self._width and
@@ -2934,28 +2672,22 @@ class GRectangle:
                     self._height == other._height)
         return False
 
-# Define camel-case names
-
-    getX = get_x
-    getY = get_y
-    getWidth = get_width
-    getHeight = get_height
-    isEmpty = is_empty
 
 # Class: GTimer
 
 class GTimer:
-    """
-    This type implements a timer running in the window.  This class supports
-    both one-shot and interval timers.
-    """
+    """This type implements a timer running in the window."""
 
 # Constructor: GTimer
 
     def __init__(self, gw, fn, delay):
-        """
-        Creates a new GTimer that calls fn after the specified delay.
-        """
+        """Creates a new GTimer that calls fn after the specified delay."""
+        if not isinstance(gw, GWindow):
+            raise TypeError("GTimer: gw must be a GWindow")
+        if not callable(fn):
+            raise TypeError("GTimer: fn must be callable")
+        if not _is_number(delay):
+            raise TypeError("GTimer: delay must be a number")
         self._gw = gw
         self._fn = fn
         self._delay = delay
@@ -2966,34 +2698,28 @@ class GTimer:
 # Public method: set_repeats
 
     def set_repeats(self, flag):
-        """
-        Determines whether the timer should repeat.
-        """
+        """Determines whether the timer should repeat."""
         self._repeats = flag
 
 # Public method: set_delay
 
     def set_delay(self, delay):
-        """
-        Sets the delay time for this timer.
-        """
+        """Sets the delay time for this timer."""
+        if not _is_number(delay):
+            raise TypeError("set_delay: delay must be a number")
         self._delay = delay
 
 # Public method: start
 
     def start(self):
-        """
-        Starts the timer.
-        """
+        """Starts the timer."""
         tkc = self._gw._canvas
         self._after_id = tkc.after(self._delay, self._timer_ticked)
 
 # Public method: stop
 
     def stop(self):
-        """
-        Stops the timer.
-        """
+        """Stops the timer."""
         if self._after_id is not None:
             tkc = self._gw._canvas
             tkc.after_cancel(self._after_id)
@@ -3010,90 +2736,59 @@ class GTimer:
 # Class: GEvent
 
 class GEvent(object):
-    """
-    This type is the abstract superclass for all events in the graphics
-    package.
-    """
+    """This type is the abstract superclass for all graphical events."""
 
 # Constructor: GEvent
 
     def __init__(self):
-        """
-        Creates a new <code>GEvent</code> object.  This method should
-        not be called by clients.
-        """
+        """Creates a new GEvent object (called only by subclasses)."""
 
 # Public abstract method: get_source
 
     def get_source(self):
-        """
-        Returns the source of this event.  Subclasses must override this
-        method with an appropriate definition.
-        """
+        """Returns the source of this event."""
         raise Exception("get_source is not defined in the base class")
 
 # Class: GMouseEvent
 
 class GMouseEvent(GEvent):
-    """
-    This class maintains the data for a mouse event.
-    """
+    """This class maintains the data for a mouse event."""
 
 # Constructor: GMouseEvent
 
     def __init__(self, tke):
-        """
-        Creates a new <code>GMouseEvent</code> from the corresponding
-        tkinter event tke.
-        """
+        """Creates a new GMouseEvent from the corresponding tkinter event."""
         self._x = tke.x
         self._y = tke.y
 
 # Public method: get_x
 
     def get_x(self):
-        """
-        Returns the x coordinate of the mouse event.
-        """
+        """Returns the x coordinate of the mouse event."""
         return self._x
 
 # Public method: get_y
 
     def get_y(self):
-        """
-        Returns the y coordinate of the mouse event.
-        """
+        """Returns the y coordinate of the mouse event."""
         return self._y
 
 # Override method: get_source
 
     def get_source(self):
-        """
-        Returns the source of the mouse event, which is always the
-        root window.
-        """
+        """Returns the source of the mouse event."""
         return tkinter._root
 
-# Define camel-class methods
-
-    getX = get_x
-    getY = get_y
-    getSource = get_source
 
 # Class: GKeyEvent
 
 class GKeyEvent(GEvent):
-    """
-    This class maintains the data for a key event.
-    """
+    """This class maintains the data for a key event."""
 
 # Constructor: GKeyEvent
 
     def __init__(self, tke):
-        """
-        Creates a new <code>GKeyEvent</code> from the corresponding
-        tkinter event tke.
-        """
+        """Creates a new GKeyEvent from the corresponding tkinter event."""
         keysym = tke.keysym.upper()
         if len(keysym) > 1:
             underscore = keysym.find("_")
@@ -3107,48 +2802,36 @@ class GKeyEvent(GEvent):
 # Public method: get_key
 
     def get_key(self):
-        """
-        Returns the character that triggered the event.  The return
-        value will be a single-character string for normal keys and
-        the name of the key enclosed in angle brackets for special
-        keys like <RETURN>.
-        """
+        """Returns the character that triggered the event."""
         return self._key
 
 # Override method: get_source
 
     def get_source(self):
-        """
-        Returns the source of the key event, which is always the
-        root window.
-        """
+        """Returns the source of the key event."""
         return tkinter._root
 
-# Define camel-class methods
-
-    getKey = get_key
-    getSource = get_source
 
 # Class: GState
 
+# Implementation notes: GState
+# ----------------------------
+# This class implements a simple record type that allows clients to
+# define and maintain attributes.  The purpose of this class it to
+# allow callback functions to share state with the calling environment.
+# Although the closure of the callback function makes it possible to
+# read the contents of variables defined in the caller, Python's
+# implicit declaration rule makes it impossible to reassign new
+# values.  Having this class makes it possible to avoid introducing
+# the nonlocal declaration.
+
 class GState:
-    """
-    This class implements a simple record type that allows clients to
-    define and maintain attributes.  The purpose of this class it to
-    allow callback functions to share state with the calling environment.
-    Although the closure of the callback function makes it possible to
-    read the contents of variables defined in the caller, Python's
-    implicit declaration rule makes it impossible to reassign new
-    values.  Having this class makes it possible to avoid introducing
-    the nonlocal declaration.
-    """
+    """This class implements a simple record type for clients."""
 
 # Constructor: GState
 
     def __init__(self):
-        """
-        Creates a new GState with no fields.
-        """
+        """Creates a new GState with no fields."""
         pass
 
 # Override method: __str__
@@ -3162,29 +2845,22 @@ class GState:
                 s += str(key) + ":" + repr(self.__dict__[key])
         return "GState(" + s + ")"
 
-# Private function: get_screen_width
+# Private function: _get_screen_width
 
 def _get_screen_width():
-    """
-    Returns the width of the entire display screen.
-    """
+    """Returns the width of the entire display screen."""
     return tkinter._root.winfo_screenwidth()
 
-# Private function: get_screen_height
+# Private function: _get_screen_height
 
 def _get_screen_height():
-    """
-    Returns the height of the entire display screen.
-    """
+    """Returns the height of the entire display screen."""
     return tkinter._root.winfo_screenheight()
 
-# Private function: convert_color_to_rgb
+# Private function: _convert_color_to_rgb
 
 def _convert_color_to_rgb(color_name):
-    """
-    Converts a color name into an integer that encodes the
-    red, green, and blue components of the color.
-    """
+    """Converts a color name into an int that encodes the rgb components."""
     if color_name == "":
         return -1
     if color_name[0] == "#":
@@ -3195,33 +2871,23 @@ def _convert_color_to_rgb(color_name):
         raise Exception("set_color: Illegal color - " + color_name)
     return COLOR_TABLE[name]
 
-# Private function: convert_rgb_to_color
+# Private function: _convert_rgb_to_color
 
 def _convert_rgb_to_color(rgb):
-    """
-    Converts an rgb value into a name in the form <code>"#rrggbb"</code>.
-    Each of the <code>rr</code>, <code>gg</code>, and <code>bb</code>
-    values are two-digit hexadecimal numbers indicating the intensity
-    of that component.
-    """
+    """Converts an rgb value into a name in the form "#rrggbb"."""
     hex_string = hex(0xFF000000 | rgb)
     return "#" + hex_string[4:].upper()
 
-# Private function: exit_graphics
+# Private function: _exit_graphics
 
 def _exit_graphics():
-    """
-    Closes all graphics windows and exits from the application without
-    waiting for any additional user interaction.
-    """
+    """Closes all graphics windows and exits from the application."""
     sys.exit()
 
-# Private function: get_program_name
+# Private function: _get_program_name
 
 def _get_program_name():
-    """
-    Returns the name of the program.
-    """
+    """Returns the name of the program."""
     name = None
     try:
         stack = inspect.stack()
@@ -3252,7 +2918,7 @@ def _get_program_name():
         name = name[:dot]
     return name
 
-# Private function: canonical_color_name
+# Private function: _canonical_color_name
 
 def _canonical_color_name(str):
     result = ""
@@ -3261,33 +2927,29 @@ def _canonical_color_name(str):
             result += char.lower()
     return result
 
-# Private function: dsq
+# Private function: _is_number
+
+def _is_number(x):
+    """Returns True if x is an int or a float."""
+    return isinstance(x, int) or isinstance(x, float)
+
+# Private function: _dsq
 
 def _dsq(x0, y0, x1, y1):
-    """
-    Returns the square of the distance between two points.
-    """
+    """Returns the square of the distance between two points."""
     return (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0)
 
-# Private function: decode_font
+# Private function: _decode_font
 
 def _decode_font(name):
-    """
-    Parses a font string into a tkinter <code>Font</code> object.
-    This method accepts a font in either the <code>Font.decode</code>
-    used by Java or in the form of a CSS-based style string.
-    """
+    """Parses a font string into a tkinter Font object."""
     font = _parse_js_font(name)
     if font is None:
         font = _parse_java_font(name)
     return font
 
 def _parse_js_font(name):
-    """
-    Attempts to parse a font specification as a JavaScript font.
-    If the parse succeeds, <code>parse_js_font</code> returns the font.
-    If the parse fails, <code>parse_js_font</code> returns <code>None</code>.
-    """
+    """Attempts to parse a font specification as a JavaScript font."""
     name = name.lower().strip()
     family = None
     size = -1
@@ -3322,11 +2984,7 @@ def _parse_js_font(name):
     return None
 
 def _parse_java_font(name):
-    """
-    Attempts to parse a font specification as a Java font.
-    If the parse succeeds, <code>parse_java_font</code> returns the font.
-    If the parse fails, <code>parse_java_font</code> returns <code>None</code>.
-    """
+    """Attempts to parse a font specification as a Java font."""
     components = name.lower().strip().split("-")
     family = components[0]
     weight = "normal"
@@ -3398,6 +3056,25 @@ class _GTransform:
             st = math.sin(math.radians(self._rotation))
             x1 = self._tx + self._sf * (x0 * ct + y0 * st)
             y1 = self._ty + self._sf * (y0 * ct - x0 * st)
+        return GPoint(x1, y1)
+
+    def itransform(self, a1, a2=None):
+        if a2 is None:
+            x0 = a1.get_x()
+            y0 = a1.get_y()
+        else:
+            x0 = a1
+            y0 = a2
+        if self._rotation == 0:
+            x1 = (x0 - self._tx) / self._sf
+            y1 = (y0 - self._ty) / self._sf
+        else:
+            ct = math.cos(math.radians(-self._rotation))
+            st = math.sin(math.radians(-self._rotation))
+            u1 = (x0 - self._tx) / self._sf
+            v1 = (y0 - self._ty) / self._sf
+            x1 = v1 * st + u1 * ct
+            y1 = v1 * ct - u1 * st
         return GPoint(x1, y1)
 
     def compose(self, transform):
@@ -3700,6 +3377,137 @@ COLOR_TABLE = {
     "color.orange": 0xFFC800,
     "color.pink": 0xFFAFAF
 }
+
+def enable_camel_case_names():
+    """Enables camel-case names for backward compatibility."""
+    GWindow.eventLoop = GWindow.event_loop
+    GWindow.requestFocus = GWindow.request_focus
+    GWindow.getWidth = GWindow.get_width
+    GWindow.getHeight = GWindow.get_height
+    GWindow.addEventListener = GWindow.add_event_listener
+    GWindow.setWindowTitle = GWindow.set_window_title
+    GWindow.getWindowTitle = GWindow.get_window_title
+    GWindow.getElementAt = GWindow.get_element_at
+    GWindow.createTimer = GWindow.create_timer
+    GWindow.setTimeout = GWindow.set_timeout
+    GWindow.setInterval = GWindow.set_interval
+    GWindow.getProgramName = GWindow.get_program_name
+    GWindow.getScreenWidth = GWindow.get_screen_width
+    GWindow.getScreenHeight = GWindow.get_screen_height
+    GWindow.convertColorToRGB = GWindow.convert_color_to_rgb
+    GWindow.convertRGBToColor = GWindow.convert_rgb_to_color
+    GObject.getX = GObject.get_x
+    GObject.getY = GObject.get_y
+    GObject.getLocation = GObject.get_location
+    GObject.setLocation = GObject.set_location
+    GObject.movePolar = GObject.move_polar
+    GObject.getWidth = GObject.get_width
+    GObject.getHeight = GObject.get_height
+    GObject.getSize = GObject.get_size
+    GObject.setLineWidth = GObject.set_line_width
+    GObject.getLineWidth = GObject.get_line_width
+    GObject.setColor = GObject.set_color
+    GObject.getColor = GObject.get_color
+    GObject.setVisible = GObject.set_visible
+    GObject.isVisible = GObject.is_visible
+    GObject.sendForward = GObject.send_forward
+    GObject.sendToFront = GObject.send_to_front
+    GObject.sendBackward = GObject.send_backward
+    GObject.sendToBack = GObject.send_to_back
+    GObject.getParent = GObject.get_parent
+    GFillableObject.setFilled = GFillableObject.set_filled
+    GFillableObject.isFilled = GFillableObject.is_filled
+    GFillableObject.setFillColor = GFillableObject.set_fill_color
+    GFillableObject.getFillColor = GFillableObject.get_fill_color
+    GRect.setSize = GRect.set_size
+    GRect.setBounds = GRect.set_bounds
+    GRect.getBounds = GRect.get_bounds
+    GRect.getType = GRect.get_type
+    GOval.setSize = GOval.set_size
+    GOval.setBounds = GOval.set_bounds
+    GOval.getBounds = GOval.get_bounds
+    GOval.getType = GOval.get_type
+    GCompound.removeAll = GCompound.remove_all
+    GCompound.getElementAt = GCompound.get_element_at
+    GCompound.getElementCount = GCompound.get_element_count
+    GCompound.getElement = GCompound.get_element
+    GCompound.getBounds = GCompound.get_bounds
+    GCompound.getType = GCompound.get_type
+    GArc.setStartAngle = GArc.set_start_angle
+    GArc.getStartAngle = GArc.get_start_angle
+    GArc.setSweepAngle = GArc.set_sweep_angle
+    GArc.getSweepAngle = GArc.get_sweep_angle
+    GArc.getStartPoint = GArc.get_start_point
+    GArc.getEndPoint = GArc.get_end_point
+    GArc.setFrameRectangle = GArc.set_frame_rectangle
+    GArc.getFrameRectangle = GArc.get_frame_rectangle
+    GArc.setFilled = GArc.set_filled
+    GArc.getBounds = GArc.get_bounds
+    GArc.getType = GArc.get_type
+    GLine.setStartPoint = GLine.set_start_point
+    GLine.getStartPoint = GLine.get_start_point
+    GLine.setEndPoint = GLine.set_end_point
+    GLine.getEndPoint = GLine.get_end_point
+    GLine.getType = GLine.get_type
+    GImage.getBounds = GImage.get_bounds
+    GImage.getPixelArray = GImage.get_pixel_array
+    GImage.getType = GImage.get_type
+    GImage.getRed = GImage.get_red
+    GImage.getGreen = GImage.get_green
+    GImage.getBlue = GImage.get_blue
+    GImage.getAlpha = GImage.get_alpha
+    GImage.createRGBPixel = GImage.create_rgb_pixel
+    GLabel.setFont = GLabel.set_font
+    GLabel.getFont = GLabel.get_font
+    GLabel.setLabel = GLabel.set_label
+    GLabel.getLabel = GLabel.get_label
+    GLabel.getAscent = GLabel.get_ascent
+    GLabel.getDescent = GLabel.get_descent
+    GLabel.getWidth = GLabel.get_width
+    GLabel.getHeight = GLabel.get_height
+    GLabel.getBounds = GLabel.get_bounds
+    GLabel.getType = GLabel.get_type
+    GPolygon.addVertex = GPolygon.add_vertex
+    GPolygon.addEdge = GPolygon.add_edge
+    GPolygon.addPolarEdge = GPolygon.add_polar_edge
+    GPolygon.getVertices = GPolygon.get_vertices
+    GPolygon.getBounds = GPolygon.get_bounds
+    GPolygon.getType = GPolygon.get_type
+    GPoint.getX = GPoint.get_x
+    GPoint.getY = GPoint.get_y
+    GDimension.getWidth = GDimension.get_width
+    GDimension.getHeight = GDimension.get_height
+    GRectangle.getX = GRectangle.get_x
+    GRectangle.getY = GRectangle.get_y
+    GRectangle.getWidth = GRectangle.get_width
+    GRectangle.getHeight = GRectangle.get_height
+    GRectangle.isEmpty = GRectangle.is_empty
+    GMouseEvent.getX = GMouseEvent.get_x
+    GMouseEvent.getY = GMouseEvent.get_y
+    GMouseEvent.getSource = GMouseEvent.get_source
+    GKeyEvent.getKey = GKeyEvent.get_key
+    GKeyEvent.getSource = GKeyEvent.get_source
+
+enable_camel_case_names()
+
+# Allow British spelling
+
+def enable_british_spelling():
+    """Enables British spelling."""
+    GWindow.convert_colour_to_rgb = GWindow.convert_color_to_rgb
+    GWindow.convert_rgb_to_colour = GWindow.convert_rgb_to_color
+    GWindow.convertColourToRGB = GWindow.convert_color_to_rgb
+    GWindow.convertRGBToColour = GWindow.convert_rgb_to_color
+    GObject.set_colour = GObject.set_color
+    GObject.get_colour = GObject.get_color
+    GObject.setColour = GObject.set_color
+    GObject.getColour = GObject.get_color
+    GFillableObject.set_fill_colour = GFillableObject.set_fill_color
+    GFillableObject.get_fill_colour = GFillableObject.get_fill_color
+    GFillableObject.setFillColour = GFillableObject.set_fill_color
+    GFillableObject.getFillColour = GFillableObject.get_fill_color
+
+enable_british_spelling()
 
 # Check for successful compilation
 

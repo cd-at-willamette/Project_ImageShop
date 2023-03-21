@@ -1,4 +1,9 @@
-# File: ImageShop.py
+######################################################################
+# Name:
+# Collaborators (if any):
+# Section leader's name:
+# List of extensions made (if any):
+######################################################################
 
 """
 This program is the starter file for the ImageShop application, which
