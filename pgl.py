@@ -2004,7 +2004,7 @@ class GImage(GObject):
         if ctm._sf != 1:
             w = round(img.width * ctm._sf)
             h = round(img.height * ctm._sf)
-            img = img.resize((w, h), Image.ANTIALIAS)
+            img = img.resize((w, h), Image.LANCZOS)
         if rotation != 0:
             w = img.width 
             h = img.height
