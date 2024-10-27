@@ -2,6 +2,7 @@
 # Name:
 # Collaborators (if any):
 # Section leader's name:
+# GenAI transcript (if used):
 # List of extensions made (if any):
 ######################################################################
 
