@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Project 3: Imageshop</title>
+		<style>
+        body {
+            font-size: 1.5em ;
+        }
+		.page {
+			width: 11.5in ;
+			margin: auto ;
+		}
+		.page_outer {
+			width: 11in;
+			box-shadow: -.1in -.1in .25in darkgray, .1in .1in .25in gray;
+			position: relative ;
+		}
+		.page_inner{
+			margin: 1in;  
+			margin-top: .5in;  
+		}
+        .details, .show, .hide:target {
+            display: none;
+        }
+        .hide:target + .show, .hide:target ~ .details {
+            display: block;
+        }
+		</style>
+		<style type="text/css" media="print">
+			.page {
+				width: 8.5in;
+				height: 11in;
+				margin: auto ;
+			}
+			.page_outer {
+				box-shadow: none;
+			}
+			a {
+				color: black;
+				text-decoration-line: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="page">
+			<div style="height:.25in;"> <!-- Vertical space adjuster for box shadow --></div>
+			<div class="page_outer">
+				<div style="height:.25in;"> <!-- Vertical space adjuster for box shadow --></div>
+				<div class="page_inner"><center>
+					<h1>Project 3: Imageshop</h1>
+                    <h3>Due: Monday, 3 November, 11:59 PM</h3>
+                    <p><a href="https://jrembold.github.io/Website_Backup/class_files/cs151/Projects/Project_ImageShop/">Prof. Jed Rembold's alternate instructions</a>
+                    </center>
+                    <div>
+                    <hr>
+                        <a id="hide0" href="#hide0" class="hide"><h3>A. Introduction [Show]</h3></a>
+                        <a id="show0" href="#show0" class="show"><h3>A. Introduction [Hide]</h3></a>
+                        <div class="details">
+                            <p>This project is a 5 milestone project over pgl, with a provided template over several files. Milestones will not map evening to amount of work on this assignment. I regard milestones 0-2, 3, 4a, 4b, and 4c to be roughly equal amounts of work.
+                            <hr>
+                            <h2>Files:</h2>
+                            <ul>
+                                <li>Update (only) this file:
+                                <ul>
+                                    <li><code>Imageshop.py</code></li>
+                                </ul>
+                                <li>You will also need:
+                                <ul>
+                                    <li><code>pgl.py</code></li>
+                                    <li><code>GrayscaleImage.py</code></li>
+                                    <li><code>button.py</code></li>
+                                    <li><code>filechooser.py</code></li>
+                                </ul>
+                                <li>You may wish to create:
+                                <ul>
+                                    <li><code>Equalize.py</code></li>
+                                </ul>
+                            </ul>
+                            <p><code>Imageshop.py</code> should be runnable as soon as you download the code with a load and flip vertical button. It will create an empty graphics window. The structure of <code>Imageshop.py</code> was covered extensively in the "P5" lecture <a href="https://cd-public.github.io/courses/cs1f24/slides/w9d3_p3.html">here</a>.
+                            <p>The easiest way to implement any milestone is to copy the work done to implement "Flip Vertical" - which includes adding a button, a function named "flip_vertical_action" and a function named "flip_vertical" and then make changes to "flip_vertical."
+                            <hr>
+                            <h2>Resources on PGL (Portable Graphics Library):</h2>
+                            <ul>
+                                <li><a href="https://jrembold.github.io/Website_Backup/class_files/cs151/PythonSummary.html">Prof. Jed Rembold notes on PGL (and more)</a>
+                                <li><a href="https://willamette.edu/~esroberts/python/pgldoc/">Prof. Eric Roberts notes on PGL</a>
+                            </ul>
+                            
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <div>
+                        <a id="hide5" href="#hide5" class="hide"><h3>0. Flip Horizontal [Show]</h3></a>
+                        <a id="show5" href="#show5" class="show"><h3>0. Flip Horizontal [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 0: Best By Tuesday</b>
+                            <p>Add a "Flip Horizontal" button. It is similar to "Flip Vertical" but differs in that the orders of pixel values (ints) in rows is reverse, instead of the order of the rows.
+                        </div>
+                    </div>
+                    <hr>
+                        <div>
+                        <a id="hide6" href="#hide6" class="hide"><h3>1. Rotate Left/Right [Show]</h3></a>
+                        <a id="show6" href="#show6" class="show"><h3>1. Rotate Left/Right [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 1: Best By Tuesday</b>
+                            <p><em>This task adds two (2) buttons.</em></p>
+                            <p>Create buttons corresponding to right angle rotations, both to the left (counter-clockwise) or right (clockwise). For an image of size `x` by `y`.
+                            <ul>
+                                <li>Create a new array of size `y` by `x`.
+                                <li>Copy rows from the pixel array into columns of the new array.
+                                <li>Depending on rotational direction, order rows/columns relative to one another with reversals (via slicing).
+                            </ul>
+                            <p>Here is an example of a left (counter-clockwise) rotation. The last column corresponds to the first row.
+                            <br>
+                            <center><img src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_1.svg"></center>
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <a id="hide7" href="#hide7" class="hide"><h3>2. Grayscale [Show]</h3></a>
+                        <a id="show7" href="#show7" class="show"><h3>2. Grayscale [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 3: Best By Tuesday</b>
+                            <p><em>Be advised that </em><code>create_grayscale_image</code><em> is implemented for you in GrayscaleImage.py</em></p>
+                            <p>Using <code>import</code>, use the code from GrayscaleImage.py to create a <code>Grayscale</code> button.
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <a id="hide8" href="#hide8" class="hide"><h3>3. Green Screen [Show]</h3></a>
+                        <a id="show8" href="#show8" class="show"><h3>3. Green Screen [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 4: Best By Wednesday</b>
+                            <p><em>This task will use</em> <code>choose_input_file</code><em> from <code>filechooser.py</code></em></p>
+                            <p>Create the <code>Green Screen</code> button.
+                            <p>This button will use two images: a background image, and a foreground image which contains foreground object on a background of green. Here we see two examples:
+                            <table>
+                            <td style="width:50%">
+                            <img style="width:100%" src="https://raw.githubusercontent.com/rembold-cs151-master/Project_ImageShop/2e5e569996f54b35d92c612506116160b20c88e3/images/MillenniumFalcon.png"><center><p>A sample background image</p></center></td>
+                            <td style="width:50%">
+                            <img style="width:100%" src="https://raw.githubusercontent.com/rembold-cs151-master/Project_ImageShop/refs/heads/main/images/ReyGreenScreen.png"><center><p>A sample foreground image</p></center></td></table>
+                            <p>This is the combined image:
+                            <center><img style="width:50%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_2.png"></center>
+                            <p>Proceed as follows. Initially, there is some background image using <code>Load</code>. Then, upon a click to <code>Green Screen</code>, some function e.g. <code>green_screen_action</code> should:
+                            <ul>
+                                <li>Read in the foreground image file, using <code>choose_input_file</code>.
+                                <ul>
+                                    <li>Make a GImage of the file.
+                                </ul>
+                                <li>Create pixel arrays of the back- and foreground images.
+                                <li>Loop over all the coordinates in background pixel array.
+                                <ul>
+                                    <li>If the foreground pixel <strong>DOES NOT</strong> have a green value <em>more than double</em> the highest of the red and blue values, replace the background pixel with this foreground pixel, using "single equals assignment".
+                                    <ul>
+                                        <li>You will likely want to use <code>GImage.get_green()</code>
+                                        <li>You may wish to consult these slides, from "Files", beginning <a href="https://cd-public.github.io/courses/cs1f24/slides/w9d2_files.html#/15">here</a>.
+                                        <li>If there is no corresponding foreground pixel at this location, simply maintain the background array.
+                                    </ul>
+                                </ul>
+                                <li>Set the current image to be a new <code>GImage</code> created from the updated pixel array with both background and foreground pixels.
+                            </ul>
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <a id="hide9" href="#hide9" class="hide"><h3>4. Equalize [Show]</h3></a>
+                        <a id="show9" href="#show9" class="show"><h3>4. Equalize [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 4: Best By Saturday</b>
+                            <p><em>This task will use luminence from <code>GrayscaleImage.py</code>.</em></p>
+                            <p>For equalize, I recommend you create a new file <code>Equalize.py</code> to work within, and to import this file into <code>Imageshop.py</code>.
+                            <p>I would start with <code>GrayscaleImage.py</code> and just begin make changes to create equalize.
+                            <p>Initially, you will probably want all of your code from Problem Set 5: Problem 1 in the file as well.
+                            <p>While you may complete this milestone all at once, it has three natural substeps that are roughly equal to the other milestones, so I have recommended completion schedule over three days.
+                            <p>4a and 4b roughly correspond to the notions of "density plots" and "cumulative density plots" for students interested in further reading, and may find better results when searching/asking for help using these terms.
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <a id="hidea" href="#hidea" class="hide"><h3>4a. Histogram [Show]</h3></a>
+                        <a id="showa" href="#showa" class="show"><h3>4a. Histogram [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 4a: Best By Thursday</b>
+                            <p><em>This creates code that helps with 4b and 4c, but is not required to be used directly.</em></p>
+                            <p>Create an "image histogram".
+                            <ul>
+                                <li>Calculate the luminence of every pixel in the image.
+                                <li>Calculate how many pixels have a certain luminence value, which will be between 0 and 255.
+                                <li>Display the histogram of this data.
+                            </ul>
+                            <p>Initially, you will need to apply the <code>luminence</code> function from <code>GrayscaleImage.py</code> to each pixel in an array of pixels - a list of lists of integers.
+                            <p>From there, you <code>Prob1.py</code> code should be suitable, other than that it must not count values of a list of lists, rather than a "single" or "flat" list.
+                            <p>Here are some examples:
+                            <table>
+                                <tr style="">
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_3.png">
+                                    </td>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_4.png">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_5.png">
+                                    </td>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_6.png">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <hr>
+                    <div>
+                        <a id="hided" href="#hided" class="hide"><h3>4b. Accumulation [Show]</h3></a>
+                        <a id="showd" href="#showd" class="show"><h3>4b. Accumulation [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 4b: Best By Friday</b>
+                            <p><em>This creates code required for 4c.</em></p>
+                            <p>Create an "image histogram" to a "cumulative histogram".
+                            <blockquote>
+                                Related to the image histogram is the cumulative histogram, which shows not simply how many pixels have a particular luminance, but rather how many pixels have a particular luminance or lower. Like the image histogram, the cumulative histogram is an array of 256 values: one for each possible value of the luminance.
+                            </blockquote>
+                            <ul>
+                                <li>Create a new accumulation list of the same length as the existing histogram.
+                                <li>Store the number of pixels with luminence of less than or equal to <code>i</code> at index <code>i</code> in the accumulation list.
+                                <li>Optionally, display the histogram of this data.
+                            </ul>
+                            <p>Here is an example of how this works over a small list of a few values.
+                            <hr>
+                            <pre><code>print(PI_DIGITS)
+hist = create_histogram_array(PI_DIGITS)
+print(hist)
+accs = create_accumulation_array(hist)
+print(accs)</code></pre>   
+                            <hr>
+                            <pre><code>[3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 5, 8, 9, 7, 9]
+[0, 2, 1, 2, 1, 4, 1, 1, 1, 3]
+[0, 2, 3, 5, 6, 10, 11, 12, 13, 16]</code></pre>  
+                            <hr>
+                            <p><code>accs[2]</code> is equal to 3, because that is the sum of the values of all the elements of <code>hist</code> of index less than or equal to two, which in this case are 0, 2, and 1.
+                            <p>This code is covered in your section <a href="https://rembold-cs151-master.github.io/Section09/#/problem-3-cumulative-histograms">here</a>.
+                            <p>Here are some examples:
+                            <table>
+                                <tr style="">
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_3.png">
+                                    </td>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_7.png">
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_5.png">
+                                    </td>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_8.png">
+                                    </td>
+                                </tr>
+                            </table>
+                            <hr>
+                            <h4>Extra Credit</h4>
+                            <p>For the interested student, I gave a brief Lightning Talk at the Portland Python Users Group last spring about a good technique to perform this calculation using "assignment operators." The talk is <a href="https://cd-public.github.io/courses/old/demo/fold.html#/10">here</a> and the following is relevant sample code. You may use this code with citation to that talk if and only if you include a comment explaining how it works to the satisfaction of your section leader.
+                            <hr>
+                            <pre><code>hist = [0, 2, 1, 2, 1, 4, 1, 1, 1, 3]
+acc = 0
+accs = [acc := acc + i for i in hist]
+print(accs)</code></pre> 
+                            <hr>
+                            <pre><code>[0, 2, 3, 5, 6, 10, 11, 12, 13, 16]</code></pre> 
+                            <hr>
+                            <p>There is one other "obvious" place to use an assignment operator in Project 3, and if you use it, I will regard it as an extension. Contact me via email or Discord after receiving your feedback from your section leader so I may update my gradebook.
+                        </div>
+                    </div>
+                    <hr><div>
+                        <a id="hidee" href="#hidee" class="hide"><h3>4c. Equalization [Show]</h3></a>
+                        <a id="showe" href="#showe" class="show"><h3>4c. Equalization [Hide]</h3></a>
+                        <div class="details">
+                            <b>Milestone 4c: Best By Saturday</b>
+                            <p><em>This finishes Milestone 4.</em></p>
+                            <p>There is a lengthy description of the mathematics and reasoning of this milestone <a href="https://jrembold.github.io/Website_Backup/class_files/cs151/Projects/Project_ImageShop/milestones/milestone4.html#the-histogram-equalization-algorithm">here</a>.
+                            <p>For this milestone, update every pixel in the image.
+                            <ul>
+                                <li>Calculate the luminence of the pixel.
+                                <li>Determine the value in the accumulation histogram that corresponds to that luminance.
+                                <li>Divide that value by the number of pixels - this will be <code>len(array) * len(array[0])</code>.
+                                <li>Multiply that value by 255.
+                                <li>Set this final value to be the new pixel value.
+                            </ul>
+                            <p>That is, replace each luminance value (L) in the original image using the formula<br><br>
+                            <span class="math display"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math
+                    xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+                    <semantics>
+                        <mrow>
+                            <mtext>new&nbsp;luminance</mtext>
+                            <mo>=</mo>
+                            <mfrac>
+                                <mrow>
+                                    <mn>255</mn>
+                                    <mo>×</mo>
+                                    <mtext>&nbsp;cumulative&nbsp;histogram[L]</mtext>
+                                </mrow>
+                                <mtext>&nbsp;total&nbsp;number&nbsp;of&nbsp;pixels&nbsp;</mtext>
+                            </mfrac>
+                        </mrow>
+                        <annotation encoding="application/x-tex">\text{new luminance} = \frac{255 \times \text{
+                            cumulative histogram[L]}}{\text{ total number of pixels }} </annotation>
+                    </semantics>
+                </math></span>
+                            <p>Here is an example of how to do the first step - change a value based on an accumulation count.
+                            <hr>
+                            <pre><code>hist = create_histogram_array(PI_DIGITS)
+accs = create_accumulation_array(hist)
+eql = [accs[digit] for digit in PI_DIGITS] # value -> accumulation count
+print(eql)</code></pre>   
+                            <hr>
+                            <pre><code>[5, 2, 6, 2, 10, 16, 3, 11, 10, 5, 10, 10, 13, 16, 12, 16]</code></pre>   
+                            <hr>
+                            <p><code>accs[2]</code> is equal to 3, because that is the sum of the values of all the elements of <code>hist</code> of index less than or equal to two, which in this case are 0, 2, and 1.
+                            <p>Here is a side by side comparison:
+                            <table>
+                                <tr style="">
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_3.png">
+                                    </td>
+                                    <td style="width:50%">
+                                        <img style="width:100%" src="https://cd-public.github.io/courses/old/cs1f24/hws/imgs/p3_9.png">
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    <hr>
+                    <div style="height:1in;"> <!-- Vertical space adjuster for box shadow --></div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
